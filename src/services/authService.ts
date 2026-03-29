@@ -86,35 +86,35 @@ export interface OperationResult {
 
 const authService = {
   signUp(payload: SignUpRequest): Promise<{ data: SignUpResponse }> {
-    return api.post('/users/auth/signup', payload)
+    return api.post('/api/users/auth/signup', payload)
   },
 
   login(payload: LoginRequest): Promise<{ data: LoginResponse }> {
-    return api.post('/users/auth/login', payload)
+    return api.post('/api/users/auth/login', payload)
   },
 
   sendMfa(payload: SendMfaRequest): Promise<{ data: SendMfaResponse }> {
-    return api.post('/users/auth/send-mfa', payload)
+    return api.post('/api/users/auth/send-mfa', payload)
   },
 
   verifyMfa(payload: VerifyMfaRequest): Promise<{ data: VerifyMfaResponse }> {
-    return api.post('/users/auth/verify-mfa', payload)
+    return api.post('/api/users/auth/verify-mfa', payload)
   },
 
   verifyEmail(payload: VerifyEmailRequest): Promise<{ data: VerifyEmailResponse }> {
-    return api.post('/users/auth/verify-email', payload)
+    return api.post('/api/users/auth/verify-email', payload)
   },
 
   forgotPassword(payload: ForgotPasswordRequest): Promise<{ data: OperationResult }> {
-    return api.post('/users/auth/forgot-password', payload)
+    return api.post('/api/users/auth/forgot-password', payload)
   },
 
   resetPassword(payload: ResetPasswordRequest): Promise<{ data: OperationResult }> {
-    return api.post('/users/auth/reset-password', payload)
+    return api.post('/api/users/auth/reset-password', payload)
   },
 
   logout(): Promise<{ data: OperationResult }> {
-    return api.post('/users/auth/logout')
+    return api.post('/api/users/auth/logout')
   },
 }
 
