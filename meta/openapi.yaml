@@ -1,0 +1,595 @@
+openapi: 3.0.3
+info:
+  title: MSA API
+  version: '1.0.0'
+  description: |
+    OpenAPI specification for the MSA API (Azure Functions, .NET 8)
+    Includes endpoints for user authentication, MFA, investment profiles, and investment profile questions.
+    All endpoints require JWT authentication unless otherwise noted.
+servers:
+  - url: /api
+paths:
+  /clients/{clientId}/investment-profiles/draft:
+    get:
+      summary: Get the client's draft investment profile
+      operationId: getDraftInvestmentProfile
+      tags: [InvestmentProfiles]
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Draft investment profile found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvestmentProfileDraft'
+        '404':
+          description: No draft profile exists
+    post:
+      summary: Start a new draft investment profile
+      operationId: startDraftInvestmentProfile
+      tags: [InvestmentProfiles]
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                templateProfileId:
+                  type: string
+                  description: Optional profileId to copy from
+      responses:
+        '201':
+          description: Draft investment profile created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationResult'
+    put:
+      summary: Update the client's draft investment profile
+      operationId: updateDraftInvestmentProfile
+      tags: [InvestmentProfiles]
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvestmentProfileDraftUpdate'
+      responses:
+        '200':
+          description: Draft investment profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationResultWithFields'
+    delete:
+      summary: Discard the client's draft investment profile
+      operationId: deleteDraftInvestmentProfile
+      tags: [InvestmentProfiles]
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Draft investment profile discarded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationResult'
+  /clients/{clientId}/investment-profiles/current:
+    get:
+      summary: Get the client's current active investment profile
+      operationId: getCurrentInvestmentProfile
+      tags: [InvestmentProfiles]
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Current investment profile found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvestmentProfileCurrent'
+  /clients/{clientId}/investment-profiles/archived:
+    get:
+      summary: List all archived investment profiles for the client
+      operationId: listArchivedInvestmentProfiles
+      tags: [InvestmentProfiles]
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: skip
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: take
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: List of archived investment profiles
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArchivedProfilesList'
+  /clients/{clientId}/investment-profiles/archived/{profileId}:
+    get:
+      summary: Get a specific archived investment profile
+      operationId: getArchivedInvestmentProfile
+      tags: [InvestmentProfiles]
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: profileId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Archived investment profile found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvestmentProfileArchived'
+        '404':
+          description: Not found
+  /clients/{clientId}/investment-profiles/draft/publish:
+    post:
+      summary: Publish the draft investment profile as the new current profile
+      operationId: publishDraftInvestmentProfile
+      tags: [InvestmentProfiles]
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Draft profile published successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishResult'
+  # --- AUTH ENDPOINTS ---
+  /users/auth/signup:
+    post:
+      summary: Register a new user
+      operationId: signUp
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignUpRequest'
+      responses:
+        '200':
+          description: Signup response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignUpResponse'
+  /users/auth/login:
+    post:
+      summary: Authenticate user with email and password
+      operationId: login
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+  /users/auth/send-mfa:
+    post:
+      summary: Send OTP for MFA (email or SMS)
+      operationId: sendMfa
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendMfaRequest'
+      responses:
+        '200':
+          description: Send MFA response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendMfaResponse'
+  /users/auth/verify-mfa:
+    post:
+      summary: Verify OTP for MFA and complete authentication
+      operationId: verifyMfa
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyMfaRequest'
+      responses:
+        '200':
+          description: Verify MFA response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyMfaResponse'
+  /users/auth/verify-email:
+    post:
+      summary: Verify user email address with token
+      operationId: verifyEmail
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyEmailRequest'
+      responses:
+        '200':
+          description: Verify email response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyEmailResponse'
+  /users/auth/forgot-password:
+    post:
+      summary: Send password reset link to user's email
+      operationId: forgotPassword
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+      responses:
+        '200':
+          description: Forgot password response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationResult'
+  /users/auth/reset-password:
+    post:
+      summary: Complete password reset with token and new password
+      operationId: resetPassword
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '200':
+          description: Reset password response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationResult'
+  /users/auth/logout:
+    post:
+      summary: Logout user and invalidate refresh token
+      operationId: logout
+      tags: [Auth]
+      responses:
+        '200':
+          description: Logout response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationResult'
+  # ...additional endpoints for investment-profile-questions, users, auth, MFA, etc. would follow the same pattern
+components:
+  schemas:
+    InvestmentProfileDraft:
+      type: object
+      properties:
+        profileId:
+          type: string
+        clientId:
+          type: string
+        status:
+          type: string
+          enum: [draft]
+        investmentObjective:
+          type: string
+        riskTolerance:
+          type: string
+        basedOnProfileId:
+          type: string
+        createdDate:
+          type: string
+          format: date-time
+        lastModifiedDate:
+          type: string
+          format: date-time
+    InvestmentProfileCurrent:
+      type: object
+      properties:
+        profileId:
+          type: string
+        clientId:
+          type: string
+        status:
+          type: string
+          enum: [current]
+        investmentObjective:
+          type: string
+        riskTolerance:
+          type: string
+        timeHorizon:
+          type: integer
+        assetAllocation:
+          type: object
+        publishedDate:
+          type: string
+          format: date-time
+        publishedBy:
+          type: string
+    InvestmentProfileArchived:
+      type: object
+      properties:
+        profileId:
+          type: string
+        clientId:
+          type: string
+        status:
+          type: string
+          enum: [archived]
+        investmentObjective:
+          type: string
+        riskTolerance:
+          type: string
+        assetAllocation:
+          type: object
+        archivedDate:
+          type: string
+          format: date-time
+        archiveRetentionExpiry:
+          type: string
+          format: date-time
+    ArchivedProfilesList:
+      type: object
+      properties:
+        archivedProfiles:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvestmentProfileArchived'
+        pageInfo:
+          type: object
+          properties:
+            skip:
+              type: integer
+            take:
+              type: integer
+            total:
+              type: integer
+    OperationResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        profileId:
+          type: string
+        status:
+          type: string
+    OperationResultWithFields:
+      allOf:
+        - $ref: '#/components/schemas/OperationResult'
+        - type: object
+          properties:
+            updatedFields:
+              type: array
+              items:
+                type: string
+    PublishResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        profileId:
+          type: string
+        status:
+          type: string
+        publishedDate:
+          type: string
+          format: date-time
+    InvestmentProfileDraftUpdate:
+      type: object
+      properties:
+        investmentObjective:
+          type: string
+        riskTolerance:
+          type: string
+        timeHorizon:
+          type: integer
+        annualIncome:
+          type: number
+        netWorth:
+          type: number
+        investmentExperience:
+          type: string
+        investmentAmount:
+          type: number
+        assetAllocation:
+          type: object
+        specialConsiderations:
+          type: string
+
+    # --- AUTH SCHEMAS ---
+    SignUpRequest:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+        phoneNumber:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+    SignUpResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        userId:
+          type: string
+        requiresEmailVerification:
+          type: boolean
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+    LoginResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        sessionId:
+          type: string
+        userId:
+          type: string
+        email:
+          type: string
+        requiresMfa:
+          type: boolean
+    SendMfaRequest:
+      type: object
+      properties:
+        sessionId:
+          type: string
+        method:
+          type: string
+          enum: [sms, email]
+    SendMfaResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        verificationSid:
+          type: string
+        sentVia:
+          type: string
+        maskedDestination:
+          type: string
+    VerifyMfaRequest:
+      type: object
+      properties:
+        sessionId:
+          type: string
+        method:
+          type: string
+          enum: [sms, email]
+        code:
+          type: string
+    VerifyMfaResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        tokenType:
+          type: string
+        expiresIn:
+          type: integer
+        mfaMethod:
+          type: string
+        user:
+          type: object
+    VerifyEmailRequest:
+      type: object
+      properties:
+        userId:
+          type: string
+        token:
+          type: string
+    VerifyEmailResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        userId:
+          type: string
+    ForgotPasswordRequest:
+      type: object
+      properties:
+        email:
+          type: string
+    ResetPasswordRequest:
+      type: object
+      properties:
+        token:
+          type: string
+        newPassword:
+          type: string

@@ -1,0 +1,85 @@
+I'm starting a new Investment Advisory Firm called Main Street Advisors (official business name: Main Street Advisors LTD)
+
+Business Model
+
+Main Street Advisors LTD (MSA) operates as a confidential, non discretionary investment advisory firm. We do not take custody of client funds, execute trades, or have any transactional authority. Clients maintain full control of their brokerage accounts. At times, clients may authorize us to access read only brokerage portal data (Schwab, Fidelity, etc.) for the purpose of reviewing balances and positions. This access is always client controlled and broker regulated.
+We provide independent assessments of financial standing, risk tolerance, personal circumstances, and long term objectives, and issue structured, actionable advice. We do not prepare official financial statements or regulatory account summaries.
+
+There are two arms of the business, the primary and secondary. The primary arm is advising clients with less than $500k net worth prepare for retirement. These people are generally not fiancially savvy, have made a lot of mistakes and are feeeling stressed about thier looming retirement years. The secondary are is acting as a second opinion or oversight partner, described in the following paragraph.
+
+Confidential Oversight & Advisory Services (Non Disclosure Required)
+MSA also provides confidential, third party advisory and oversight services to individual citizens, advocates, legal representatives, and other interested stakeholders regarding matters such as municipal finance, bond initiatives, pension systems, and other public sector financial concerns.
+In these engagements, MSA’s role is strictly independent, non public, and non participatory with the third party institutions being evaluated. Our purpose is to help clients understand financial structures, assess risks, evaluate proposals, and identify potential issues—without influencing, interacting with, or being recognized by the municipalities, agencies, service providers, or financial firms involved.
+To preserve neutrality, independence, and the integrity of our assessments:
+•	MSA does not communicate with, reveal its involvement to, or engage directly with any third party entity that is the subject of our review.
+•	MSA does not permit clients to disclose our involvement, except where legally required.
+•	MSA will never allow third parties to know that oversight, evaluation, or analysis is being performed by or through our firm, and we maintain strict internal controls to protect that confidentiality.
+•	Our participation is exclusively advisory to the client, not supervisory or regulatory.
+This structure ensures that MSA remains completely independent, free from external influence, and fully insulated from potential pressure by entities whose financial practices, reports, or decisions we are evaluating on the client’s behalf.
+
+UI Website
+
+For this business I have a website that acts as a sales funnel and a web app that allows clients to sign up, fill out a client investment profile and communicate with advisors through the platform compliant with FINRA rules for Investment Advisory firms and Registered Investment Advisors.
+
+This part of the project concerns the UI which is built on Vue 3 and Bootstrap 5. The goal of this UI is to educate prospective clients about the primary arm of the business, about our services, to facilitate signups, login and all the functionality listed below.
+
+Users are classified as clients, advisors, supervisors and associates. All access and interactions for users are to be recorded in the site's audit records (Cosmos database).
+
+The goal is for this site to enable:
+
+    Clients to sign up and create user accounts and authenticate using third party providers like Google accounts.
+
+    authentication and authorization of users (clients, advisors, super admins), with "admin" functions for advisors signing into the system who are only able to access clients they are assigned unless super admin privilages are granted
+
+    Recording audit events for security and compliance based on user interactions (stored in Cosmos database)
+    
+    users (clients) to connect to their broker (like Fidelity) and pull down read-only portfolio information into the advisory database 
+
+    users (clients) to create new investment profiles within thier user profile, update investment profiles from existing ones and track previous invetment profiles for review and regulatory compliance
+    
+    clients to message advisors and receive replies within the site and fire notifications to opted-in modalities such as SMS or email for clients. No data is to be tranmisstied via SMS or email, only notifications that the system has changes or messages for them to review.  
+    
+    clients and advisors to upload and download documents within a client profile
+
+    AI integration with a service that is prompted for performing cursory analysis of client investment profiles and messages, viewable only by supervisors and advisors
+
+    integration with a third-party document signing service to orchestrate that workflow for certain disclosures and agreements clients need to sign for thier profile
+
+    clients and advisors to set available times and request schedule of consultations with eachother for 15 - 60 minutes
+
+
+Supervisors are "super admins" (implicitly advisors) and can assign or revoke access to clients for other advisors. Supervisors can access all client profiles and advisor records and profiles. 
+
+Clients can only access thier own profile. 
+
+Advisors can only access client profiles for which they are assigned. The system should enable time tracking for advisors. 
+
+Associates (Client Service Associate) are a users for non-advisory tasks, mainly : billing, marketing and scheduling/outreach.
+
+Similar to profiles, there are standard disclosures that the system needs to manage which are only modifiable by supervisors. Changes and versions need to be tracked and newly published diosclosures need to bee automatically sent or notified to clients via the site's messaging and notification platform. These include the various policies and brochures required by regulatory bodies as outlined by FINRA
+
+Backend API 
+C# .NET Core
+Microsoft Azure (for general site hosting and infrastructure)
+OpenAPI 3.0 Spec available for the API
+
+Vendors
+Twilio/Azure Communication Services for SMS and email
+Stripe for payments processing
+Docusign for complinace documents and agreements
+
+Future enhancements:
+
+OAuth providers for signup and authentication
+Google
+
+Broker integrations
+Fidelity
+
+Bank integrations 
+Plaid
+
+
+
+
+
