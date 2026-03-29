@@ -1,73 +1,102 @@
-# msa-ui
+# Main Street Advisors UI
 
-This template should help get you started developing with Vue 3 in Vite.
+Frontend application for Main Street Advisors LTD (MSA), built with Vue 3, TypeScript, Vite, Pinia, Vue Router, and Bootstrap 5.
 
-## Recommended IDE Setup
+This repository contains the client-facing marketing funnel and authenticated UI flows for onboarding, authentication, and advisor-client interactions.
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+## Tech Stack
 
-## Recommended Browser Setup
+- Vue 3 + TypeScript
+- Vite
+- Vue Router
+- Pinia
+- Bootstrap 5
+- Axios
+- Vitest + Vue Test Utils
+- Playwright
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+## Requirements
 
-## Type Support for `.vue` Imports in TS
+- Node.js: `^20.19.0 || >=22.12.0`
+- npm: current LTS-compatible version
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
-
-## Customize configuration
-
-See [Vite Configuration Reference](https://vite.dev/config/).
-
-## Project Setup
+## Quick Start
 
 ```sh
 npm install
-```
-
-### Compile and Hot-Reload for Development
-
-```sh
 npm run dev
 ```
 
-### Type-Check, Compile and Minify for Production
+App runs on the Vite development server and supports hot module reload.
 
-```sh
-npm run build
+## Scripts
+
+- `npm run dev`: start local dev server
+- `npm run build`: type-check and build production assets
+- `npm run preview`: preview production build locally
+- `npm run test:unit`: run unit tests (Vitest)
+- `npm run test:e2e`: run end-to-end tests (Playwright)
+- `npm run lint`: run oxlint + eslint with fixes
+- `npm run format`: run Prettier on `src/`
+
+## Project Structure
+
+```text
+src/
+  components/
+    layout/
+      NavBar.vue
+      FooterBar.vue
+  router/
+    index.ts
+  services/
+    api.ts
+    authService.ts
+  stores/
+    auth.ts
+  views/
+    HomeView.vue
+    auth/
+      LoginView.vue
+      SignupView.vue
+      MfaView.vue
+      VerifyEmailView.vue
+  App.vue
+  main.ts
 ```
 
-### Run Unit Tests with [Vitest](https://vitest.dev/)
+## Domain Context
+
+The UI supports MSA's advisory model:
+
+- Prospect education and conversion funnel
+- Client account creation and authentication
+- Role-based experiences for clients, advisors, supervisors, and associates
+- Compliance-oriented workflows and auditable user interactions
+
+Backend and integration direction:
+
+- API: .NET Core
+- OpenAPI definition: `meta/openapi.yaml`
+- Cloud platform: Microsoft Azure
+- Planned integrations: Google OAuth, Fidelity read-only brokerage integration, Plaid, Twilio/Azure Communication Services, Stripe, DocuSign
+
+## Testing
+
+Unit tests:
 
 ```sh
 npm run test:unit
 ```
 
-### Run End-to-End Tests with [Playwright](https://playwright.dev)
+E2E tests:
 
 ```sh
-# Install browsers for the first run
 npx playwright install
-
-# When testing on CI, must build the project first
-npm run build
-
-# Runs the end-to-end tests
 npm run test:e2e
-# Runs the tests only on Chromium
-npm run test:e2e -- --project=chromium
-# Runs the tests of a specific file
-npm run test:e2e -- tests/example.spec.ts
-# Runs the tests in debug mode
-npm run test:e2e -- --debug
 ```
 
-### Lint with [ESLint](https://eslint.org/)
+## Notes
 
-```sh
-npm run lint
-```
+- This repo currently focuses on the UI layer and client-side app behavior.
+- Compliance and audit persistence are expected to be enforced primarily by backend services and APIs.
