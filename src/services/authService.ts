@@ -3,7 +3,7 @@ import api from './api'
 export interface SignUpRequest {
   email: string
   password: string
-  phoneNumber: string
+  phone: string
   firstName: string
   lastName: string
 }
@@ -31,7 +31,8 @@ export interface LoginResponse {
 
 export interface SendMfaRequest {
   sessionId: string
-  method: 'sms' | 'email'
+  userId: string
+  via: 'sms' | 'email'
 }
 
 export interface SendMfaResponse {
@@ -44,8 +45,9 @@ export interface SendMfaResponse {
 
 export interface VerifyMfaRequest {
   sessionId: string
-  method: 'sms' | 'email'
-  code: string
+  userId: string
+  via: 'sms' | 'email'
+  mfaCode: string
 }
 
 export interface VerifyMfaResponse {
@@ -60,7 +62,6 @@ export interface VerifyMfaResponse {
 }
 
 export interface VerifyEmailRequest {
-  userId: string
   token: string
 }
 

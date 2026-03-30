@@ -11,17 +11,19 @@ const success = ref(false)
 const error = ref('')
 
 onMounted(async () => {
-  const userId = route.query.userId as string
   const token = route.query.token as string
+  const email = route.query.email as string
 
-  if (!userId || !token) {
-    verifying.value = false
-    error.value = 'Invalid or missing verification link. Please request a new one.'
+  if (!token) {
+    router.replace({
+      name: 'signup-success',
+      query: email ? { email } : undefined,
+    })
     return
   }
 
   try {
-    const { data } = await authService.verifyEmail({ userId, token })
+    const { data } = await authService.verifyEmail({ token })
     success.value = data.success
     if (!data.success) {
       error.value = data.message || 'Verification failed. The link may have expired.'

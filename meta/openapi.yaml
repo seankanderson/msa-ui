@@ -476,12 +476,21 @@ components:
           type: string
         password:
           type: string
-        phoneNumber:
-          type: string
         firstName:
           type: string
         lastName:
           type: string
+        phone:
+          type: string
+          description: Optional phone number in E.164 format (e.g. +12025551234)
+        userType:
+          type: string
+          enum: [client, advisor, associate]
+          description: Optional - defaults to client
+        smsOptIn:
+          type: boolean
+          default: false
+          description: User consent for SMS MFA and notifications
     SignUpResponse:
       type: object
       properties:
@@ -518,9 +527,11 @@ components:
     SendMfaRequest:
       type: object
       properties:
+        userId:
+          type: string
         sessionId:
           type: string
-        method:
+        via:
           type: string
           enum: [sms, email]
     SendMfaResponse:
@@ -539,13 +550,15 @@ components:
     VerifyMfaRequest:
       type: object
       properties:
+        userId:
+          type: string
         sessionId:
           type: string
-        method:
+        mfaCode:
+          type: string
+        via:
           type: string
           enum: [sms, email]
-        code:
-          type: string
     VerifyMfaResponse:
       type: object
       properties:

@@ -30,7 +30,8 @@ async function sendCode() {
   try {
     const result = await auth.sendMfa({
       sessionId: auth.pendingSessionId,
-      method: selectedMethod.value,
+      userId: auth.pendingUserId ?? '',
+      via: selectedMethod.value,
     })
     if (result.success) {
       maskedDestination.value = result.maskedDestination
@@ -53,8 +54,9 @@ async function handleVerify() {
   try {
     const result = await auth.verifyMfa({
       sessionId: auth.pendingSessionId,
-      method: selectedMethod.value,
-      code: otpCode.value.trim(),
+      userId: auth.pendingUserId ?? '',
+      via: selectedMethod.value,
+      mfaCode: otpCode.value.trim(),
     })
     if (result.success) {
       router.push('/')

@@ -10,13 +10,40 @@ const form = ref({
   firstName: '',
   lastName: '',
   email: '',
-  phoneNumber: '',
+  phone: '',
   password: '',
   confirmPassword: '',
   agreeToTerms: false,
 })
 const error = ref('')
+const phoneError = ref('')
 const loading = ref(false)
+
+// Normalise input to E.164 (+[country][number], 7–15 digits after +).
+// Strips spaces, dashes, dots, parentheses then prepends +1 for bare 10-digit US numbers.
+function normalizePhone(value: string): string {
+  const digits = value.replace(/[\s().+-]/g, '')
+  if (digits.length === 10) return `+1${digits}`
+  if (value.startsWith('+')) return `+${digits}`
+  return `+${digits}`
+}
+
+function validatePhone(value: string): string | null {
+  const e164 = /^\+[1-9]\d{6,14}$/
+  if (!value) return 'Mobile phone number is required.'
+  if (!e164.test(value)) return 'Enter a valid number in E.164 format, e.g. +12125551234'
+  return null
+}
+
+function handlePhoneBlur() {
+  const normalized = normalizePhone(form.value.phone)
+  if (/^\+[1-9]\d{6,14}$/.test(normalized)) {
+    form.value.phone = normalized
+    phoneError.value = ''
+  } else {
+    phoneError.value = validatePhone(form.value.phone) ?? ''
+  }
+}
 
 function validatePassword(password: string): string | null {
   if (password.length < 8) return 'Password must be at least 8 characters.'
@@ -32,6 +59,14 @@ async function handleSubmit() {
     error.value = 'Passwords do not match.'
     return
   }
+  const normalized = normalizePhone(form.value.phone)
+  const phErr = validatePhone(normalized)
+  if (phErr) {
+    phoneError.value = phErr
+    return
+  }
+  form.value.phone = normalized
+  phoneError.value = ''
   const pwErr = validatePassword(form.value.password)
   if (pwErr) {
     error.value = pwErr
@@ -48,11 +83,14 @@ async function handleSubmit() {
       firstName: form.value.firstName,
       lastName: form.value.lastName,
       email: form.value.email,
-      phoneNumber: form.value.phoneNumber,
+      phone: form.value.phone,
       password: form.value.password,
     })
     if (result.success) {
-      router.push('/verify-email')
+      router.push({
+        name: 'signup-success',
+        query: { email: form.value.email },
+      })
     } else {
       error.value = result.message || 'Registration failed. Please try again.'
     }
@@ -128,13 +166,16 @@ async function handleSubmit() {
                 </label>
                 <input
                   id="phoneNumber"
-                  v-model="form.phoneNumber"
+                  v-model="form.phone"
                   type="tel"
-                  class="form-control"
+                  :class="['form-control', phoneError ? 'is-invalid' : '']"
                   autocomplete="tel"
                   required
                   placeholder="+1 (555) 000-0000"
+                  @blur="handlePhoneBlur"
                 />
+                <div v-if="phoneError" class="invalid-feedback">{{ phoneError }}</div>
+                <div v-else class="msa-field-hint mt-1">Include country code, e.g. +12125551234</div>
               </div>
 
               <div class="mb-3">
