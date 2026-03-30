@@ -326,7 +326,63 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OperationResult'
-  # ...additional endpoints for investment-profile-questions, users, auth, MFA, etc. would follow the same pattern
+  # --- USER PROFILE ENDPOINTS ---
+  /users/{userId}/profile:
+    get:
+      summary: Get a user's profile
+      operationId: getUserProfile
+      tags: [Users]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: User not found
+    put:
+      summary: Update a user's profile
+      operationId: updateUserProfile
+      tags: [Users]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserProfileRequest'
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateUserProfileResponse'
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: User not found
+  # ...additional endpoints for investment-profile-questions, access, etc. would follow the same pattern
 components:
   schemas:
     InvestmentProfileDraft:
@@ -606,3 +662,86 @@ components:
           type: string
         newPassword:
           type: string
+    # --- USER PROFILE SCHEMAS ---
+    UserProfile:
+      type: object
+      properties:
+        userId:
+          type: string
+        email:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phone:
+          type: string
+        dateOfBirth:
+          type: string
+          format: date-time
+        governmentId:
+          type: string
+          description: Masked in response (e.g. SSN)
+        authProvider:
+          type: string
+          example: email
+        role:
+          type: string
+          enum: [client, advisor, associate, supervisor]
+        smsOptIn:
+          type: boolean
+        isEnabled:
+          type: boolean
+        emailVerified:
+          type: boolean
+        signupDate:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    UpdateUserProfileRequest:
+      type: object
+      description: |
+        All fields are optional — only supplied fields are applied.
+        Field availability depends on the caller's role:
+          client/advisor/associate : firstName, lastName, dateOfBirth, phone, governmentId, smsOptIn
+          advisor/associate        : above + isEnabled
+          supervisor               : above + role
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        dateOfBirth:
+          type: string
+          format: date-time
+        phone:
+          type: string
+          description: Phone number in E.164 format (e.g. +12025551234)
+        governmentId:
+          type: string
+        smsOptIn:
+          type: boolean
+          description: User consent for SMS MFA and notifications
+        isEnabled:
+          type: boolean
+          description: Advisor, associate, or supervisor only
+        role:
+          type: string
+          enum: [client, advisor, associate, supervisor]
+          description: Supervisor only
+    UpdateUserProfileResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        updatedFields:
+          type: array
+          items:
+            type: string

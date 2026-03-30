@@ -45,6 +45,7 @@ async function handleLogout() {
           </template>
           <template v-else>
             <span class="text-light small me-2">{{ auth.user?.email }}</span>
+            <RouterLink class="btn btn-outline-light btn-sm" to="/profile">Profile</RouterLink>
             <button class="btn btn-outline-light btn-sm" @click="handleLogout">Sign Out</button>
           </template>
         </div>

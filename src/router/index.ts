@@ -34,15 +34,24 @@ const router = createRouter({
       name: 'signup-success',
       component: () => import('@/views/auth/SignupSuccessView.vue'),
     },
+    {
+      path: '/profile',
+      name: 'profile',
+      component: () => import('@/views/ProfileView.vue'),
+      meta: { requiresAuth: true },
+    },
   ],
 })
 
-// Redirect authenticated users away from auth pages
+// Redirect authenticated users away from auth pages; guard protected routes
 router.beforeEach((to) => {
   const authPages = ['login', 'signup', 'mfa', 'verify-email', 'signup-success']
   const auth = useAuthStore()
   if (authPages.includes(to.name as string) && auth.isAuthenticated) {
     return { name: 'home' }
+  }
+  if (to.meta.requiresAuth && !auth.isAuthenticated) {
+    return { name: 'login' }
   }
 })
 

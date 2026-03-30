@@ -86,6 +86,10 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  function updateDisplayName(_firstName: string, _lastName: string) {
+    // Display name derived from email; placeholder for future firstName display if added to AuthUser
+  }
+
   return {
     user,
     accessToken,
@@ -98,5 +102,6 @@ export const useAuthStore = defineStore('auth', () => {
     sendMfa,
     verifyMfa,
     logout,
+    updateDisplayName,
   }
 })
