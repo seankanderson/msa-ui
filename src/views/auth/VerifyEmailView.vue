@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import authService from '@/services/authService'
+import { getApiError } from '@/services/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -28,8 +29,8 @@ onMounted(async () => {
     if (!data.success) {
       error.value = data.message || 'Verification failed. The link may have expired.'
     }
-  } catch {
-    error.value = 'An unexpected error occurred. Please try again or contact support.'
+  } catch (err) {
+    error.value = getApiError(err, 'An unexpected error occurred. Please try again or contact support.')
   } finally {
     verifying.value = false
   }

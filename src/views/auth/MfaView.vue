@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { getApiError } from '@/services/api'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -40,8 +41,8 @@ async function sendCode() {
     } else {
       error.value = result.message || 'Failed to send code. Please try again.'
     }
-  } catch {
-    error.value = 'An unexpected error occurred. Please try again.'
+  } catch (err) {
+    error.value = getApiError(err)
   } finally {
     sending.value = false
   }
@@ -63,8 +64,8 @@ async function handleVerify() {
     } else {
       error.value = result.message || 'Invalid code. Please try again.'
     }
-  } catch {
-    error.value = 'An unexpected error occurred. Please try again.'
+  } catch (err) {
+    error.value = getApiError(err)
   } finally {
     verifying.value = false
   }

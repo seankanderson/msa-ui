@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { getApiError } from '@/services/api'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -25,8 +26,8 @@ async function handleSubmit() {
     } else {
       error.value = result.message || 'Login failed. Please check your credentials.'
     }
-  } catch {
-    error.value = 'An unexpected error occurred. Please try again.'
+  } catch (err) {
+    error.value = getApiError(err)
   } finally {
     loading.value = false
   }

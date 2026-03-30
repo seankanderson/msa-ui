@@ -14,8 +14,13 @@ interface AuthUser {
 }
 
 export const useAuthStore = defineStore('auth', () => {
-  const user = ref<AuthUser | null>(null)
   const accessToken = ref<string | null>(localStorage.getItem('msa_access_token'))
+
+  const storedUserId = localStorage.getItem('msa_user_id')
+  const storedEmail = localStorage.getItem('msa_user_email')
+  const user = ref<AuthUser | null>(
+    storedUserId && storedEmail ? { userId: storedUserId, email: storedEmail } : null,
+  )
 
   // Pending MFA state
   const pendingSessionId = ref<string | null>(null)
@@ -59,6 +64,8 @@ export const useAuthStore = defineStore('auth', () => {
         userId: pendingUserId.value ?? '',
         email: pendingEmail.value ?? '',
       }
+      localStorage.setItem('msa_user_id', user.value.userId)
+      localStorage.setItem('msa_user_email', user.value.email)
       pendingSessionId.value = null
       pendingUserId.value = null
       pendingEmail.value = null
@@ -74,6 +81,8 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = null
       localStorage.removeItem('msa_access_token')
       localStorage.removeItem('msa_refresh_token')
+      localStorage.removeItem('msa_user_id')
+      localStorage.removeItem('msa_user_email')
     }
   }
 

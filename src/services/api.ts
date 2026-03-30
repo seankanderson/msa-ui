@@ -18,7 +18,9 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const url: string = error.config?.url ?? ''
+    const isAuthEndpoint = url.includes('/users/auth/')
+    if (error.response?.status === 401 && !isAuthEndpoint) {
       localStorage.removeItem('msa_access_token')
       localStorage.removeItem('msa_refresh_token')
       window.location.href = '/login'
@@ -26,5 +28,11 @@ api.interceptors.response.use(
     return Promise.reject(error)
   },
 )
+
+/** Extracts the `message` field from an API error response body, falling back to a provided default. */
+export function getApiError(err: unknown, fallback = 'An unexpected error occurred. Please try again.'): string {
+  const body = (err as { response?: { data?: { message?: string } } })?.response?.data
+  return body?.message || fallback
+}
 
 export default api
