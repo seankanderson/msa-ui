@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useForm, useField } from 'vee-validate'
+import { toTypedSchema } from '@vee-validate/zod'
+import { z } from 'zod'
 import { useAuthStore } from '@/stores/auth'
 import userService from '@/services/userService'
 import { getApiError } from '@/services/api'
@@ -12,18 +15,9 @@ const saving = ref(false)
 const loadError = ref('')
 const saveError = ref('')
 const saveSuccess = ref('')
-const phoneError = ref('')
-
 const profile = ref<UserProfile | null>(null)
 
-const form = ref<UpdateUserProfileRequest & { phone: string }>({
-  firstName: '',
-  lastName: '',
-  phone: '',
-  dateOfBirth: '',
-  governmentId: '',
-  smsOptIn: false,
-})
+const E164 = /^\+[1-9]\d{6,14}$/
 
 function normalizePhone(value: string): string {
   const digits = value.replace(/[\s().+-]/g, '')
@@ -32,61 +26,97 @@ function normalizePhone(value: string): string {
   return `+${digits}`
 }
 
-function validatePhone(value: string): string | null {
-  if (!value) return null // phone is optional on update
-  const e164 = /^\+[1-9]\d{6,14}$/
-  if (!e164.test(value)) return 'Enter a valid number in E.164 format, e.g. +12125551234'
-  return null
-}
-
-function handlePhoneBlur() {
-  if (!form.value.phone) { phoneError.value = ''; return }
-  const normalized = normalizePhone(form.value.phone)
-  if (/^\+[1-9]\d{6,14}$/.test(normalized)) {
-    form.value.phone = normalized
-    phoneError.value = ''
-  } else {
-    phoneError.value = validatePhone(form.value.phone) ?? ''
-  }
-}
-
 function toDateInputValue(iso: string | null | undefined): string {
   if (!iso) return ''
   return iso.split('T')[0] ?? ''
+}
+
+function maskGovernmentId(value: string): string {
+  const digits = value.replace(/[^a-zA-Z0-9]/g, '')
+  const visibleCount = Math.min(4, digits.length)
+  const masked = '•'.repeat(digits.length - visibleCount) + digits.slice(-visibleCount)
+  let result = ''
+  let maskedIdx = 0
+  for (const char of value) {
+    if (/[a-zA-Z0-9]/.test(char)) {
+      result += masked[maskedIdx++]
+    } else {
+      result += char
+    }
+  }
+  return result
+}
+
+const { handleSubmit, resetForm, meta } = useForm({
+  validationSchema: toTypedSchema(
+    z.object({
+      firstName: z.string(),
+      lastName: z.string(),
+      phone: z
+        .string()
+        .refine((v) => !v || E164.test(v), 'Enter a valid E.164 number, e.g. +12125551234'),
+      dateOfBirth: z.string(),
+      governmentId: z.string(),
+      smsOptIn: z.boolean(),
+    }),
+  ),
+  initialValues: {
+    firstName: '',
+    lastName: '',
+    phone: '',
+    dateOfBirth: '',
+    governmentId: '',
+    smsOptIn: false,
+  },
+})
+
+const { value: firstName } = useField<string>('firstName')
+const { value: lastName } = useField<string>('lastName')
+const { value: phone, errorMessage: phoneError, handleChange: setPhone } = useField<string>('phone')
+const { value: dateOfBirth } = useField<string>('dateOfBirth')
+const { value: governmentId } = useField<string>('governmentId')
+const { value: smsOptIn } = useField<boolean>('smsOptIn')
+
+function handlePhoneBlur() {
+  if (!phone.value) return
+  const normalized = normalizePhone(phone.value)
+  if (E164.test(normalized)) {
+    setPhone(normalized)
+  }
+}
+
+async function loadProfile(userId: string) {
+  try {
+    const { data } = await userService.getProfile(userId)
+    profile.value = data
+    resetForm({
+      values: {
+        firstName: data.firstName ?? '',
+        lastName: data.lastName ?? '',
+        phone: data.phone ?? '',
+        dateOfBirth: toDateInputValue(data.dateOfBirth),
+        governmentId: '', // not pre-filled — masked client-side in placeholder
+        smsOptIn: data.smsOptIn ?? false,
+      },
+    })
+  } catch (err) {
+    loadError.value = getApiError(err, 'Failed to load profile.')
+  }
 }
 
 onMounted(async () => {
   const userId = auth.user?.userId
   if (!userId) return
   try {
-    const { data } = await userService.getProfile(userId)
-    profile.value = data
-    form.value = {
-      firstName: data.firstName ?? '',
-      lastName: data.lastName ?? '',
-      phone: data.phone ?? '',
-      dateOfBirth: toDateInputValue(data.dateOfBirth),
-      governmentId: data.governmentId ?? '',
-      smsOptIn: data.smsOptIn ?? false,
-    }
-  } catch (err) {
-    loadError.value = getApiError(err, 'Failed to load profile.')
+    await loadProfile(userId)
   } finally {
     loading.value = false
   }
 })
 
-async function handleSubmit() {
+const onSubmit = handleSubmit(async (values) => {
   saveError.value = ''
   saveSuccess.value = ''
-  phoneError.value = ''
-
-  if (form.value.phone) {
-    const normalized = normalizePhone(form.value.phone)
-    const phErr = validatePhone(normalized)
-    if (phErr) { phoneError.value = phErr; return }
-    form.value.phone = normalized
-  }
 
   const userId = auth.user?.userId
   if (!userId) return
@@ -94,19 +124,19 @@ async function handleSubmit() {
   saving.value = true
   try {
     const payload: UpdateUserProfileRequest = {
-      firstName: form.value.firstName || undefined,
-      lastName: form.value.lastName || undefined,
-      phone: form.value.phone || undefined,
-      dateOfBirth: form.value.dateOfBirth ? `${form.value.dateOfBirth}T00:00:00Z` : null,
-      governmentId: form.value.governmentId || undefined,
-      smsOptIn: form.value.smsOptIn,
+      firstName: values.firstName || undefined,
+      lastName: values.lastName || undefined,
+      phone: values.phone || undefined,
+      dateOfBirth: values.dateOfBirth ? `${values.dateOfBirth}T00:00:00Z` : null,
+      governmentId: values.governmentId || undefined,
+      smsOptIn: values.smsOptIn,
     }
     const { data } = await userService.updateProfile(userId, payload)
     if (data.success) {
+      await loadProfile(userId)
       saveSuccess.value = 'Profile updated successfully.'
-      // keep local user email display in sync if name changed in store
-      if (form.value.firstName || form.value.lastName) {
-        auth.updateDisplayName(form.value.firstName ?? '', form.value.lastName ?? '')
+      if (values.firstName || values.lastName) {
+        auth.updateDisplayName(values.firstName ?? '', values.lastName ?? '')
       }
     } else {
       saveError.value = data.message || 'Update failed. Please try again.'
@@ -116,7 +146,7 @@ async function handleSubmit() {
   } finally {
     saving.value = false
   }
-}
+})
 </script>
 
 <template>
@@ -165,16 +195,16 @@ async function handleSubmit() {
             <hr class="msa-divider" />
 
             <!-- Editable fields -->
-            <form novalidate @submit.prevent="handleSubmit">
+            <form @submit="onSubmit">
               <div class="msa-section-label">Personal Details</div>
               <div class="row g-3 mb-3">
                 <div class="col-md-6">
                   <label for="firstName" class="form-label">First Name</label>
-                  <input id="firstName" v-model="form.firstName" type="text" class="form-control" autocomplete="given-name" />
+                  <input id="firstName" v-model="firstName" type="text" class="form-control" autocomplete="given-name" />
                 </div>
                 <div class="col-md-6">
                   <label for="lastName" class="form-label">Last Name</label>
-                  <input id="lastName" v-model="form.lastName" type="text" class="form-control" autocomplete="family-name" />
+                  <input id="lastName" v-model="lastName" type="text" class="form-control" autocomplete="family-name" />
                 </div>
               </div>
 
@@ -183,7 +213,7 @@ async function handleSubmit() {
                   <label for="phone" class="form-label">Mobile Phone</label>
                   <input
                     id="phone"
-                    v-model="form.phone"
+                    v-model="phone"
                     type="tel"
                     :class="['form-control', phoneError ? 'is-invalid' : '']"
                     autocomplete="tel"
@@ -195,21 +225,19 @@ async function handleSubmit() {
                 </div>
                 <div class="col-md-6">
                   <label for="dateOfBirth" class="form-label">Date of Birth</label>
-                  <input id="dateOfBirth" v-model="form.dateOfBirth" type="date" class="form-control" />
+                  <input id="dateOfBirth" v-model="dateOfBirth" type="date" class="form-control" />
                 </div>
               </div>
 
               <div class="mb-4">
-                <label for="governmentId" class="form-label">
-                  Government ID
-                  <span class="msa-label-hint">— stored masked, e.g. SSN</span>
-                </label>
-                <input id="governmentId" v-model="form.governmentId" type="text" class="form-control" autocomplete="off" placeholder="e.g. 123-45-6789" />
+                <label for="governmentId" class="form-label">Government ID</label>
+                <input id="governmentId" v-model="governmentId" type="text" class="form-control" autocomplete="off" :placeholder="profile?.governmentId ? `Current: ${maskGovernmentId(profile.governmentId)} — enter new value to replace` : 'e.g. 123-45-6789'" />
+                <div class="msa-field-hint mt-1">Leave blank to keep your existing Government ID on file.</div>
               </div>
 
               <div class="mb-4">
                 <div class="form-check">
-                  <input id="smsOptIn" v-model="form.smsOptIn" class="form-check-input" type="checkbox" />
+                  <input id="smsOptIn" v-model="smsOptIn" class="form-check-input" type="checkbox" />
                   <label class="form-check-label msa-check-label" for="smsOptIn">
                     Receive SMS notifications when there are messages or updates for you in the portal
                   </label>
@@ -217,7 +245,7 @@ async function handleSubmit() {
               </div>
 
               <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-primary-msa" :disabled="saving">
+                <button type="submit" class="btn btn-primary-msa" :disabled="!meta.dirty || saving">
                   <span v-if="saving" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                   {{ saving ? 'Saving…' : 'Save Changes' }}
                 </button>

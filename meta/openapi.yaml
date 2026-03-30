@@ -681,7 +681,7 @@ components:
           format: date-time
         governmentId:
           type: string
-          description: Masked in response (e.g. SSN)
+          description: SSN or equivalent
         authProvider:
           type: string
           example: email
@@ -745,3 +745,72 @@ components:
           type: array
           items:
             type: string
+    # --- AUDIT LOG SCHEMAS ---
+    AuditLogFieldChange:
+      type: object
+      description: Before and after values for a single changed field.
+      properties:
+        before:
+          description: Value before the change. Null if field was previously unset. Redacted for sensitive fields (e.g. governmentId).
+        after:
+          description: Value after the change. Redacted for sensitive fields (e.g. governmentId).
+    AuditLogDetails:
+      type: object
+      description: >
+        Flexible details payload keyed by event type.
+        For profile_updated events, contains a "changes" map where each key is a field name
+        and each value is an AuditLogFieldChange.
+      additionalProperties: true
+      example:
+        changes:
+          firstName:
+            before: John
+            after: Jonathan
+          phone:
+            before: "+12025550001"
+            after: "+12025550002"
+          governmentId:
+            before: "***REDACTED***"
+            after: "***REDACTED***"
+    AuditLogEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          description: MongoDB ObjectId
+        eventType:
+          type: string
+          description: >
+            Type of event. Known values:
+            user_signup_completed, email_verified, login, logout,
+            profile_updated, profile_viewed,
+            access_granted, access_revoked
+          example: profile_updated
+        userId:
+          type: string
+          description: ID of the user who performed the action
+        targetUserId:
+          type: string
+          description: ID of the user affected by the action (may be null for self-actions)
+        action:
+          type: string
+          description: Human-readable description of the action
+          example: "User updated own profile"
+        details:
+          $ref: '#/components/schemas/AuditLogDetails'
+        ipAddress:
+          type: string
+        userAgent:
+          type: string
+        statusCode:
+          type: integer
+          description: HTTP response status code at time of event
+        errorMessage:
+          type: string
+          description: Error message if the action failed (null on success)
+        timestamp:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
