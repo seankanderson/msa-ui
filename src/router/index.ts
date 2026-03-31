@@ -40,6 +40,12 @@ const router = createRouter({
       component: () => import('@/views/ProfileView.vue'),
       meta: { requiresAuth: true },
     },
+    {
+      path: '/questions',
+      name: 'questions',
+      component: () => import('@/views/admin/InvestmentProfileQuestionsView.vue'),
+      meta: { requiresAuth: true, requiresRole: 'supervisor' },
+    },
   ],
 })
 
@@ -52,6 +58,9 @@ router.beforeEach((to) => {
   }
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
     return { name: 'login' }
+  }
+  if (to.meta.requiresRole && auth.user?.role !== to.meta.requiresRole) {
+    return { name: 'home' }
   }
 })
 

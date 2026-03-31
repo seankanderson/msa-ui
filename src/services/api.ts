@@ -1,5 +1,19 @@
 import axios from 'axios'
 
+function toCamelCase(str: string): string {
+  return str.charAt(0).toLowerCase() + str.slice(1)
+}
+
+function transformKeys(obj: unknown): unknown {
+  if (Array.isArray(obj)) return obj.map(transformKeys)
+  if (obj !== null && typeof obj === 'object') {
+    return Object.fromEntries(
+      Object.entries(obj as Record<string, unknown>).map(([k, v]) => [toCamelCase(k), transformKeys(v)]),
+    )
+  }
+  return obj
+}
+
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:7071',
   headers: {
@@ -16,7 +30,10 @@ api.interceptors.request.use((config) => {
 })
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    response.data = transformKeys(response.data)
+    return response
+  },
   (error) => {
     const url: string = error.config?.url ?? ''
     const isAuthEndpoint = url.includes('/users/auth/')

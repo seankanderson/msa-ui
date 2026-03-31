@@ -382,7 +382,205 @@ paths:
           description: Forbidden
         '404':
           description: User not found
-  # ...additional endpoints for investment-profile-questions, access, etc. would follow the same pattern
+  # --- INVESTMENT PROFILE QUESTIONS ENDPOINTS ---
+  /investment-profile-questions/current:
+    get:
+      summary: Get the current active investment profile question set
+      operationId: getCurrentInvestmentProfileQuestions
+      tags: [InvestmentProfileQuestions]
+      parameters:
+        - name: name
+          in: query
+          required: false
+          schema:
+            type: string
+            default: basic-individual-investment-profile
+            enum:
+              - basic-individual-investment-profile
+          description: |
+            The question set to return. Defaults to basic-individual-investment-profile.
+            If no current set exists for the requested name it is auto-seeded from defaults.
+      responses:
+        '200':
+          description: Current question set
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvestmentProfileQuestionsDocument'
+        '400':
+          description: Invalid question set name
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
+  /investment-profile-questions/draft:
+    get:
+      summary: Get the draft investment profile question set
+      operationId: getDraftInvestmentProfileQuestions
+      tags: [InvestmentProfileQuestions]
+      responses:
+        '200':
+          description: Draft question set
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvestmentProfileQuestionsDocument'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden — supervisors only
+        '404':
+          description: No draft question set exists
+    post:
+      summary: Start a new draft investment profile question set
+      operationId: startDraftInvestmentProfileQuestions
+      tags: [InvestmentProfileQuestions]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  default: basic-individual-investment-profile
+                  description: The question set name to create a draft for.
+                description:
+                  type: string
+      responses:
+        '201':
+          description: Draft question set created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationResult'
+        '400':
+          description: A draft already exists
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden — supervisors only
+    put:
+      summary: Update the draft investment profile question set
+      operationId: updateDraftInvestmentProfileQuestions
+      tags: [InvestmentProfileQuestions]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateInvestmentProfileQuestionsRequest'
+      responses:
+        '200':
+          description: Draft question set updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationResult'
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden — supervisors only
+        '404':
+          description: No draft question set exists
+    delete:
+      summary: Discard the draft investment profile question set
+      operationId: deleteDraftInvestmentProfileQuestions
+      tags: [InvestmentProfileQuestions]
+      responses:
+        '200':
+          description: Draft discarded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationResult'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden — supervisors only
+        '404':
+          description: No draft question set exists
+  /investment-profile-questions/draft/publish:
+    post:
+      summary: Publish the draft question set as the new current set
+      operationId: publishDraftInvestmentProfileQuestions
+      tags: [InvestmentProfileQuestions]
+      description: |
+        Archives the existing current set and promotes the draft to current.
+        The archived set retains a 5-year retention window.
+      responses:
+        '200':
+          description: Draft published successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishQuestionsResult'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden — supervisors only
+        '404':
+          description: No draft question set exists
+  /investment-profile-questions/archived:
+    get:
+      summary: List all archived investment profile question sets
+      operationId: listArchivedInvestmentProfileQuestions
+      tags: [InvestmentProfileQuestions]
+      parameters:
+        - name: skip
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: take
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: List of archived question sets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArchivedQuestionSetsList'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden — supervisors only
+  /investment-profile-questions/archived/{questionsSetId}:
+    get:
+      summary: Get a specific archived investment profile question set
+      operationId: getArchivedInvestmentProfileQuestions
+      tags: [InvestmentProfileQuestions]
+      parameters:
+        - name: questionsSetId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Archived question set
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvestmentProfileQuestionsDocument'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden — supervisors only
+        '404':
+          description: Not found
 components:
   schemas:
     InvestmentProfileDraft:
@@ -772,6 +970,207 @@ components:
           governmentId:
             before: "***REDACTED***"
             after: "***REDACTED***"
+    # --- INVESTMENT PROFILE QUESTIONS SCHEMAS ---
+    QuestionCondition:
+      type: object
+      description: |
+        Defines when a follow-up question group should be shown based on the parent question's answer.
+        Uses a uniform { operator, value } shape — every operator always has a value field.
+        Supported operators: eq, neq, contains, gt, lt, gte, lte
+      required:
+        - operator
+        - value
+      properties:
+        operator:
+          type: string
+          enum: [eq, neq, contains, gt, lt, gte, lte]
+          description: |
+            eq       — answer equals value (case-insensitive). Use with booleans: value "true" or "false".
+            neq      — answer does not equal value.
+            contains — answer string contains value (case-insensitive). Use with multipleChoice answers.
+            gt/lt/gte/lte — numeric comparisons.
+        value:
+          type: string
+          description: The comparison value as a string (e.g. "true", "pay", "50000").
+    FollowUpQuestionGroup:
+      type: object
+      description: A group of follow-up questions shown when the parent question's answer satisfies the condition.
+      properties:
+        condition:
+          $ref: '#/components/schemas/QuestionCondition'
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvestmentProfileQuestion'
+    InvestmentProfileQuestion:
+      type: object
+      description: A single question in an investment profile question set.
+      properties:
+        id:
+          type: string
+          description: Stable snake_case identifier (e.g. date_of_birth). Used to map client answers back to questions.
+        title:
+          type: string
+          description: Short display label.
+        content:
+          type: string
+          description: Full question text shown to the client.
+        type:
+          type: string
+          enum: [boolean, multipleChoice, freeform, date, integer, decimal]
+          description: |
+            boolean       — True/false. Answer submitted as string "true" or "false".
+            multipleChoice — Client picks one value from choices array.
+            freeform      — Open text. May allow multiple responses.
+            date          — ISO 8601 date string.
+            integer       — Whole number.
+            decimal       — Decimal/currency number.
+        isRequired:
+          type: boolean
+        displayOrder:
+          type: integer
+          description: Sort order within its parent question list.
+        choices:
+          type: array
+          items:
+            type: string
+          nullable: true
+          description: Valid choices for multipleChoice questions. Null for all other types.
+        allowsMultipleResponses:
+          type: boolean
+          default: false
+          description: If true, the client can submit more than one answer (e.g. listing multiple retirement accounts).
+        followUpQuestions:
+          type: array
+          items:
+            $ref: '#/components/schemas/FollowUpQuestionGroup'
+          description: Conditional groups of questions shown based on this question's answer.
+        minValue:
+          type: number
+          nullable: true
+          description: Minimum value for integer or decimal questions.
+        maxValue:
+          type: number
+          nullable: true
+          description: Maximum value for integer or decimal questions.
+        helpText:
+          type: string
+          nullable: true
+          description: Optional hint text shown below the question.
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    InvestmentProfileQuestionsDocument:
+      type: object
+      description: |
+        A versioned set of investment profile questions.
+        Status lifecycle: draft → current → archived.
+        Only one current and one draft can exist per named set at a time.
+        Auto-seeded from defaults when no current set exists for a given name.
+      properties:
+        id:
+          type: string
+          description: GUID question-set ID.
+        name:
+          type: string
+          description: |
+            Question set name. Used to support different sets for different client types.
+            Valid values: basic-individual-investment-profile
+          example: basic-individual-investment-profile
+        status:
+          type: string
+          enum: [current, draft, archived]
+        description:
+          type: string
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvestmentProfileQuestion'
+        createdDate:
+          type: string
+          format: date-time
+        createdBy:
+          type: string
+          description: Supervisor userId, or "system" for auto-seeded sets.
+        lastModifiedDate:
+          type: string
+          format: date-time
+        lastModifiedBy:
+          type: string
+        publishedDate:
+          type: string
+          format: date-time
+          nullable: true
+        publishedBy:
+          type: string
+          nullable: true
+        archivedDate:
+          type: string
+          format: date-time
+          nullable: true
+        archiveRetentionExpiry:
+          type: string
+          format: date-time
+          nullable: true
+          description: 5-year retention window, same as investment profiles.
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    UpdateInvestmentProfileQuestionsRequest:
+      type: object
+      description: Replaces the questions array on the draft question set.
+      properties:
+        description:
+          type: string
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvestmentProfileQuestion'
+    PublishQuestionsResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        questionsSetId:
+          type: string
+        status:
+          type: string
+          enum: [current]
+        publishedDate:
+          type: string
+          format: date-time
+    ArchivedQuestionSetsList:
+      type: object
+      properties:
+        archivedSets:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvestmentProfileQuestionsDocument'
+        pageInfo:
+          type: object
+          properties:
+            skip:
+              type: integer
+            take:
+              type: integer
+            total:
+              type: integer
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
     AuditLogEntry:
       type: object
       properties:
@@ -784,7 +1183,8 @@ components:
             Type of event. Known values:
             user_signup_completed, email_verified, login, logout,
             profile_updated, profile_viewed,
-            access_granted, access_revoked
+            access_granted, access_revoked,
+            investment_profile_questions_viewed
           example: profile_updated
         userId:
           type: string

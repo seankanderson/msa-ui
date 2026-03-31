@@ -89,6 +89,7 @@ async function loadProfile(userId: string) {
   try {
     const { data } = await userService.getProfile(userId)
     profile.value = data
+    auth.setUserRole(data.role)
     resetForm({
       values: {
         firstName: data.firstName ?? '',

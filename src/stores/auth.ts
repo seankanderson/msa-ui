@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import authService from '@/services/authService'
+import userService from '@/services/userService'
 import type {
   LoginRequest,
   SignUpRequest,
@@ -8,9 +9,12 @@ import type {
   VerifyMfaRequest,
 } from '@/services/authService'
 
+type UserRole = 'client' | 'advisor' | 'associate' | 'supervisor'
+
 interface AuthUser {
   userId: string
   email: string
+  role: UserRole | null
 }
 
 export const useAuthStore = defineStore('auth', () => {
@@ -18,8 +22,11 @@ export const useAuthStore = defineStore('auth', () => {
 
   const storedUserId = localStorage.getItem('msa_user_id')
   const storedEmail = localStorage.getItem('msa_user_email')
+  const storedRole = localStorage.getItem('msa_user_role') as UserRole | null
   const user = ref<AuthUser | null>(
-    storedUserId && storedEmail ? { userId: storedUserId, email: storedEmail } : null,
+    storedUserId && storedEmail
+      ? { userId: storedUserId, email: storedEmail, role: storedRole }
+      : null,
   )
 
   // Pending MFA state
@@ -28,6 +35,7 @@ export const useAuthStore = defineStore('auth', () => {
   const pendingEmail = ref<string | null>(null)
 
   const isAuthenticated = computed(() => !!accessToken.value)
+  const isSupervisor = computed(() => user.value?.role === 'supervisor')
 
   async function signUp(payload: SignUpRequest) {
     const { data } = await authService.signUp(payload)
@@ -60,15 +68,21 @@ export const useAuthStore = defineStore('auth', () => {
       if (data.refreshToken) {
         localStorage.setItem('msa_refresh_token', data.refreshToken)
       }
-      user.value = {
-        userId: pendingUserId.value ?? '',
-        email: pendingEmail.value ?? '',
-      }
-      localStorage.setItem('msa_user_id', user.value.userId)
-      localStorage.setItem('msa_user_email', user.value.email)
+      const userId = pendingUserId.value ?? ''
+      const email = pendingEmail.value ?? ''
+      user.value = { userId, email, role: null }
+      localStorage.setItem('msa_user_id', userId)
+      localStorage.setItem('msa_user_email', email)
       pendingSessionId.value = null
       pendingUserId.value = null
       pendingEmail.value = null
+      // Fetch role immediately so route guards work from first navigation
+      try {
+        const { data: profile } = await userService.getProfile(userId)
+        setUserRole(profile.role)
+      } catch {
+        // non-fatal — role will be populated when profile page loads
+      }
     }
     return data
   }
@@ -83,6 +97,18 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.removeItem('msa_refresh_token')
       localStorage.removeItem('msa_user_id')
       localStorage.removeItem('msa_user_email')
+      localStorage.removeItem('msa_user_role')
+    }
+  }
+
+  function setUserRole(role: UserRole | null) {
+    if (user.value) {
+      user.value = { ...user.value, role }
+    }
+    if (role) {
+      localStorage.setItem('msa_user_role', role)
+    } else {
+      localStorage.removeItem('msa_user_role')
     }
   }
 
@@ -97,11 +123,13 @@ export const useAuthStore = defineStore('auth', () => {
     pendingUserId,
     pendingEmail,
     isAuthenticated,
+    isSupervisor,
     signUp,
     login,
     sendMfa,
     verifyMfa,
     logout,
+    setUserRole,
     updateDisplayName,
   }
 })

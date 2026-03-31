@@ -1,0 +1,4 @@
+Please reference the project-overview-prompt.txt for context on the business and overall project
+
+To collect investment profiles from new and existing clients we need to manage a set of questions in the database and present those to client users of the system.
+
