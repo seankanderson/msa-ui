@@ -67,8 +67,8 @@ const questionsService = {
     return api.get('/api/investment-profile-questions/draft')
   },
 
-  startDraft(): Promise<{ data: InvestmentProfileQuestionsDocument }> {
-    return api.post('/api/investment-profile-questions/draft')
+  startDraft(name: QuestionSetName = 'basic-individual-investment-profile', copyFromCurrent = true): Promise<{ data: { success: boolean; message: string; questionsSetId?: string; name: string; questionCount: number } }> {
+    return api.post('/api/investment-profile-questions/draft', { name, copyFromCurrent })
   },
 
   updateDraft(payload: UpdateDraftRequest): Promise<{ data: InvestmentProfileQuestionsDocument }> {
