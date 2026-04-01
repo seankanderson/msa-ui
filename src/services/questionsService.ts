@@ -71,7 +71,7 @@ const questionsService = {
     return api.post('/api/investment-profile-questions/draft', { name, copyFromCurrent })
   },
 
-  updateDraft(payload: UpdateDraftRequest): Promise<{ data: InvestmentProfileQuestionsDocument }> {
+  updateDraft(payload: UpdateDraftRequest): Promise<{ data: { success: boolean; message: string; questionsSetId?: string; questionCount: number } }> {
     return api.put('/api/investment-profile-questions/draft', payload)
   },
 

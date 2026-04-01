@@ -46,6 +46,30 @@ function updateNestedQuestion(index: number, updated: InvestmentProfileQuestion)
   questions[index] = updated
   group.value = { ...group.value, questions }
 }
+
+function addQuestion() {
+  const newQ: InvestmentProfileQuestion = {
+    id: `followup-${Date.now()}`,
+    title: '',
+    content: '',
+    type: 'freeform',
+    isRequired: false,
+    displayOrder: group.value.questions.length,
+    choices: null,
+    allowsMultipleResponses: false,
+    followUpQuestions: [],
+    minValue: null,
+    maxValue: null,
+    helpText: null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  }
+  group.value = { ...group.value, questions: [...group.value.questions, newQ] }
+}
+
+function removeQuestion(index: number) {
+  group.value = { ...group.value, questions: group.value.questions.filter((_, i) => i !== index) }
+}
 </script>
 
 <template>
@@ -83,15 +107,43 @@ function updateNestedQuestion(index: number, updated: InvestmentProfileQuestion)
       />
     </div>
 
-    <div class="followup-questions">
-      <QuestionEditor
+    <div class="followup-questions-header">
+      <span class="followup-questions-label">Nested Questions</span>
+      <button
+        v-if="!readonly"
+        type="button"
+        class="btn btn-xs btn-outline-navy"
+        @click="addQuestion"
+      >
+        + Add Question
+      </button>
+    </div>
+
+    <div v-if="group.questions.length > 0" class="followup-questions">
+      <div
         v-for="(q, qi) in group.questions"
         :key="q.id"
-        :model-value="q"
-        :readonly="readonly"
-        :depth="depth + 1"
-        @update:model-value="updateNestedQuestion(qi, $event)"
-      />
+        class="followup-question-row"
+      >
+        <QuestionEditor
+          :model-value="q"
+          :readonly="readonly"
+          :depth="depth + 1"
+          @update:model-value="updateNestedQuestion(qi, $event)"
+        />
+        <button
+          v-if="!readonly"
+          type="button"
+          class="btn btn-xs btn-outline-danger nested-remove-btn"
+          title="Remove question"
+          @click="removeQuestion(qi)"
+        >
+          &times;
+        </button>
+      </div>
+    </div>
+    <div v-else-if="!readonly" class="followup-questions-empty">
+      No questions yet. Use the button above to add a nested question.
     </div>
   </div>
 </template>
@@ -124,9 +176,46 @@ function updateNestedQuestion(index: number, updated: InvestmentProfileQuestion)
 .condition-op  { width: auto; min-width: 80px;  max-width: 120px; }
 .condition-val { width: auto; min-width: 100px; max-width: 200px; }
 
+.followup-questions-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.followup-questions-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6b7280;
+}
+
 .followup-questions {
   display: flex;
   flex-direction: column;
   gap: 0.625rem;
+}
+
+.followup-question-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.followup-question-row > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.nested-remove-btn {
+  flex-shrink: 0;
+  margin-top: 0.25rem;
+}
+
+.followup-questions-empty {
+  font-size: 0.78rem;
+  color: #9ca3af;
+  padding: 0.25rem 0;
 }
 </style>

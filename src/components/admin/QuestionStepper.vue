@@ -6,6 +6,11 @@ const props = defineProps<{
   readonly: boolean
 }>()
 
+const emit = defineEmits<{
+  'add-question': []
+  'delete-question': [index: number]
+}>()
+
 const currentIndex = defineModel<number>({ required: true })
 
 function prev() {
@@ -21,7 +26,16 @@ function next() {
   <div class="stepper">
     <!-- Sidebar -->
     <aside class="stepper-sidebar">
-      <div class="sidebar-title">Questions</div>
+      <div class="sidebar-title">
+        Questions
+        <button
+          v-if="!readonly"
+          class="sidebar-add-btn"
+          title="Add question"
+          aria-label="Add question"
+          @click.stop="emit('add-question')"
+        >+</button>
+      </div>
       <ul class="sidebar-list">
         <li
           v-for="(q, i) in questions"
@@ -72,6 +86,16 @@ function next() {
         >
           Next →
         </button>
+
+        <button
+          v-if="!readonly"
+          class="btn btn-sm btn-outline-danger ms-2"
+          :disabled="questions.length <= 1"
+          title="Delete this question"
+          @click="emit('delete-question', currentIndex)"
+        >
+          Delete
+        </button>
       </div>
     </div>
   </div>
@@ -99,6 +123,9 @@ function next() {
 }
 
 .sidebar-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   font-size: 0.68rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -110,6 +137,25 @@ function next() {
   top: 0;
   background: #f8f9fb;
 }
+
+.sidebar-add-btn {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+  width: 1.4rem;
+  height: 1.4rem;
+  border: 1px solid var(--msa-navy);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--msa-navy);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+}
+.sidebar-add-btn:hover { background: var(--msa-navy); color: #fff; }
 
 .sidebar-list {
   list-style: none;

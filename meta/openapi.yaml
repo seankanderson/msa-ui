@@ -260,6 +260,68 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/VerifyMfaResponse'
+  /users/auth/refresh-token:
+    post:
+      summary: Refresh access token using a valid refresh token
+      description: |
+        Exchanges a valid, non-expired, non-revoked refresh token for a new access token.
+        Rotates the refresh token: the supplied token is invalidated and a new one is returned.
+        Does not require MFA verification.
+      operationId: refreshToken
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken:
+                  type: string
+                  description: The plaintext refresh token issued at login or last rotation
+      responses:
+        '200':
+          description: New access token and rotated refresh token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  accessToken:
+                    type: string
+                    description: New JWT access token (15-minute lifetime)
+                  refreshToken:
+                    type: string
+                    description: New refresh token (7-day lifetime) — invalidates the old one
+                  tokenType:
+                    type: string
+                    example: Bearer
+                  expiresIn:
+                    type: integer
+                    description: Access token lifetime in seconds
+                    example: 900
+        '400':
+          description: Missing or invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Refresh token is invalid, expired, or revoked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Unexpected server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /users/auth/verify-email:
     post:
       summary: Verify user email address with token
@@ -1249,7 +1311,8 @@ components:
             investment_profile_questions_draft_started,
             investment_profile_questions_draft_updated,
             investment_profile_questions_published,
-            investment_profile_questions_draft_deleted
+            investment_profile_questions_draft_deleted,
+            token_refreshed
           example: profile_updated
         userId:
           type: string

@@ -113,12 +113,12 @@ async function handleSaveDraft() {
   clearAlerts()
   saving.value = true
   try {
-    const { data } = await questionsService.updateDraft({
+    await questionsService.updateDraft({
       description: draftSet.value?.description,
       questions: localQuestions.value,
     })
-    draftSet.value = data
-    localQuestions.value = deepCopy(data.questions)
+    // PUT returns a success summary, not the full document — sync draftSet from local state
+    draftSet.value = { ...draftSet.value!, questions: deepCopy(localQuestions.value) }
     alertSuccess.value = 'Draft saved.'
   } catch (err) {
     alertError.value = getApiError(err, 'Failed to save draft.')
@@ -165,6 +165,35 @@ async function handlePublishDraft() {
 // ── Editor update ─────────────────────────────────────────────────────────────
 function updateQuestion(updated: InvestmentProfileQuestion) {
   localQuestions.value[currentIndex.value] = updated
+}
+
+function handleAddQuestion() {
+  const newQ: InvestmentProfileQuestion = {
+    id: `question_${Date.now()}`,
+    title: 'New Question',
+    content: '',
+    type: 'freeform',
+    isRequired: false,
+    displayOrder: localQuestions.value.length + 1,
+    choices: null,
+    allowsMultipleResponses: false,
+    followUpQuestions: [],
+    minValue: null,
+    maxValue: null,
+    helpText: null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  }
+  localQuestions.value = [...localQuestions.value, newQ]
+  currentIndex.value = localQuestions.value.length - 1
+}
+
+function handleDeleteQuestion(index: number) {
+  if (!confirm(`Delete question "${localQuestions.value[index]?.title}"? This cannot be undone.`)) return
+  const updated = localQuestions.value.filter((_, i) => i !== index)
+  // Fix displayOrder after deletion
+  localQuestions.value = updated.map((q, i) => ({ ...q, displayOrder: i + 1 }))
+  currentIndex.value = Math.min(currentIndex.value, localQuestions.value.length - 1)
 }
 </script>
 
@@ -235,6 +264,8 @@ function updateQuestion(updated: InvestmentProfileQuestion) {
             v-model="currentIndex"
             :questions="localQuestions"
             :readonly="isReadonly"
+            @add-question="handleAddQuestion"
+            @delete-question="handleDeleteQuestion"
           >
             <QuestionEditor
               :model-value="localQuestions[currentIndex]!"

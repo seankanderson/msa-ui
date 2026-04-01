@@ -33,19 +33,61 @@ function setChoices(choices: string[]) {
   question.value = { ...question.value, choices }
 }
 
+function setType(type: InvestmentProfileQuestion['type']) {
+  question.value = {
+    ...question.value,
+    type,
+    // Reset fields that don't apply to the new type
+    choices: type === 'multipleChoice' ? (question.value.choices?.length ? question.value.choices : ['']) : null,
+    allowsMultipleResponses: type === 'freeform' ? question.value.allowsMultipleResponses : false,
+    minValue: (type === 'integer' || type === 'decimal') ? question.value.minValue : null,
+    maxValue: (type === 'integer' || type === 'decimal') ? question.value.maxValue : null,
+    // Clear follow-ups whose conditions become invalid for the new type
+    followUpQuestions: [],
+  }
+}
+
 function updateFollowUpGroup(index: number, updated: FollowUpQuestionGroup) {
   const fu = [...question.value.followUpQuestions]
   fu[index] = updated
   question.value = { ...question.value, followUpQuestions: fu }
 }
+
+function addFollowUpGroup() {
+  const defaultOp = question.value.type === 'boolean' ? 'eq'
+    : question.value.type === 'multipleChoice' ? 'eq'
+    : 'eq'
+  const defaultVal = question.value.type === 'boolean' ? 'true'
+    : (question.value.choices?.[0] ?? '')
+  const newGroup: FollowUpQuestionGroup = {
+    condition: { operator: defaultOp, value: defaultVal },
+    questions: [],
+  }
+  question.value = { ...question.value, followUpQuestions: [...question.value.followUpQuestions, newGroup] }
+}
+
+function removeFollowUpGroup(index: number) {
+  question.value = {
+    ...question.value,
+    followUpQuestions: question.value.followUpQuestions.filter((_, i) => i !== index),
+  }
+}
 </script>
 
 <template>
   <div :class="['question-editor', depth > 0 && 'question-editor--nested']">
-    <!-- Header bar: id, type badge, required badge -->
+    <!-- Header bar: id, type selector, required badge -->
     <div class="qe-header">
       <code class="qe-id">{{ question.id }}</code>
-      <span :class="['type-badge', `type-${question.type}`]">
+      <select
+        v-if="!readonly"
+        :class="['type-select', `type-${question.type}`]"
+        :value="question.type"
+        @change="setType(($event.target as HTMLSelectElement).value as InvestmentProfileQuestion['type'])"
+      >
+        <option v-for="(label, val) in TYPE_LABELS" :key="val" :value="val">{{ label }}</option>
+      </select>
+      <span v-else :class="['type-badge', `type-${question.type}`]">
         {{ TYPE_LABELS[question.type] ?? question.type }}
       </span>
       <span v-if="question.isRequired" class="ms-auto required-badge">Required</span>
@@ -159,21 +201,47 @@ function updateFollowUpGroup(index: number, updated: FollowUpQuestionGroup) {
       </div>
 
       <!-- Follow-up question groups -->
+      <div class="qe-section-header">
+        <span class="qe-section-label">Follow-up Questions</span>
+        <button
+          v-if="!readonly"
+          type="button"
+          class="btn btn-xs btn-outline-navy"
+          @click="addFollowUpGroup"
+        >
+          + Add Follow-up Group
+        </button>
+      </div>
       <template v-if="question.followUpQuestions.length > 0">
-        <div class="qe-section-label">Follow-up Questions</div>
         <div class="qe-followups">
-          <FollowUpGroupEditor
+          <div
             v-for="(group, gi) in question.followUpQuestions"
             :key="gi"
-            :model-value="group"
-            :parent-type="question.type"
-            :parent-choices="question.choices"
-            :readonly="!!readonly"
-            :depth="depth"
-            @update:model-value="updateFollowUpGroup(gi, $event)"
-          />
+            class="qe-followup-row"
+          >
+            <FollowUpGroupEditor
+              :model-value="group"
+              :parent-type="question.type"
+              :parent-choices="question.choices"
+              :readonly="!!readonly"
+              :depth="depth"
+              @update:model-value="updateFollowUpGroup(gi, $event)"
+            />
+            <button
+              v-if="!readonly"
+              type="button"
+              class="btn btn-xs btn-outline-danger followup-remove-btn"
+              title="Remove follow-up group"
+              @click="removeFollowUpGroup(gi)"
+            >
+              &times;
+            </button>
+          </div>
         </div>
       </template>
+      <div v-else-if="!readonly" class="qe-followup-empty">
+        No follow-up groups. Use the button above to add conditions that reveal additional questions.
+      </div>
     </div>
   </div>
 </template>
@@ -264,13 +332,19 @@ function updateFollowUpGroup(index: number, updated: FollowUpQuestionGroup) {
   color: #4a5568;
 }
 
+.qe-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
 .qe-section-label {
   font-size: 0.68rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--msa-gold);
-  margin-bottom: 0.5rem;
 }
 
 .qe-followups {
@@ -278,4 +352,44 @@ function updateFollowUpGroup(index: number, updated: FollowUpQuestionGroup) {
   flex-direction: column;
   gap: 0.5rem;
 }
+
+.qe-followup-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.qe-followup-row > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.followup-remove-btn {
+  flex-shrink: 0;
+  margin-top: 0.25rem;
+}
+
+.qe-followup-empty {
+  font-size: 0.78rem;
+  color: #9ca3af;
+  padding: 0.5rem 0;
+}
+
+.type-select {
+  font-size: 0.63rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.18rem 1.5rem 0.18rem 0.45rem;
+  border-radius: 2px;
+  height: auto;
+  border: 1px solid #d1d5db;
+  cursor: pointer;
+}
+.type-select.type-boolean        { background: #dbeafe; color: #1e40af; border-color: #93c5fd; }
+.type-select.type-multipleChoice { background: #ede9fe; color: #5b21b6; border-color: #c4b5fd; }
+.type-select.type-freeform       { background: #dcfce7; color: #166534; border-color: #86efac; }
+.type-select.type-date           { background: #fce7f3; color: #9d174d; border-color: #f9a8d4; }
+.type-select.type-integer,
+.type-select.type-decimal        { background: #ffedd5; color: #9a3412; border-color: #fdba74; }
 </style>

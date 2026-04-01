@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import NavBar from '@/components/layout/NavBar.vue'
 import FooterBar from '@/components/layout/FooterBar.vue'
+import RefreshingModal from '@/components/RefreshingModal.vue'
 </script>
 
 <template>
@@ -10,6 +11,7 @@ import FooterBar from '@/components/layout/FooterBar.vue'
       <RouterView />
     </main>
     <FooterBar />
+    <RefreshingModal />
   </div>
 </template>
 
