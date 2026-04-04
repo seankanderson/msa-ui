@@ -9,6 +9,7 @@ const year = new Date().getFullYear()
         <div class="col-md-4">
           <p class="msa-footer-brand mb-1">Main Street Advisors LTD</p>
           <p class="msa-footer-tagline">Independent. Objective. On Your Side.</p>
+          <p class="msa-footer-crd mb-0">CRD #341812</p>
         </div>
         <div class="col-md-4">
           <p class="msa-footer-heading">Legal</p>
@@ -30,7 +31,7 @@ const year = new Date().getFullYear()
       <div class="row align-items-center">
         <div class="col-md-8">
           <p class="msa-footer-disclaimer mb-0">
-            Main Street Advisors LTD is a registered investment advisory firm. We are a
+            Main Street Advisors LTD is a registered investment advisory firm (CRD #341812). We are a
             non-discretionary advisor and do not take custody of client funds. All investing involves
             risk. Past performance is not indicative of future results.
           </p>
@@ -63,6 +64,12 @@ const year = new Date().getFullYear()
   font-size: 0.8rem;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+}
+
+.msa-footer-crd {
+  font-size: 0.75rem;
+  color: #7a93b4;
+  letter-spacing: 0.03em;
 }
 
 .msa-footer-heading {

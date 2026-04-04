@@ -1015,12 +1015,57 @@ components:
         signupDate:
           type: string
           format: date-time
+        crdNumber:
+          type: string
+          description: FINRA CRD number. Only present on profiles with role advisor or supervisor.
+          example: '1234567'
+        assignedAdvisor:
+          $ref: '#/components/schemas/AssignedAdvisorInfo'
+        address:
+          $ref: '#/components/schemas/UserAddress'
         createdAt:
           type: string
           format: date-time
         updatedAt:
           type: string
           format: date-time
+    AssignedAdvisorInfo:
+      type: object
+      description: Resolved advisor details returned on a user profile response.
+      properties:
+        advisorId:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        crdNumber:
+          type: string
+          description: FINRA CRD number of the assigned advisor.
+          example: '1234567'
+    UserAddress:
+      type: object
+      description: Mailing or residential address.
+      properties:
+        street:
+          type: string
+          example: 123 Main St
+        street2:
+          type: string
+          description: Apartment, suite, unit, floor, etc.
+          example: Apt 4B
+        city:
+          type: string
+          example: Springfield
+        state:
+          type: string
+          example: IL
+        postalCode:
+          type: string
+          example: '62701'
+        country:
+          type: string
+          example: US
     UpdateUserProfileRequest:
       type: object
       description: |
@@ -1045,6 +1090,18 @@ components:
         smsOptIn:
           type: boolean
           description: User consent for SMS MFA and notifications
+        crdNumber:
+          type: string
+          description: |
+            FINRA CRD number (4–7 digits). Only applicable to profiles with role advisor or supervisor.
+            Settable by the profile owner (if advisor/supervisor) or a supervisor.
+          example: '1234567'
+        assignedAdvisorId:
+          type: string
+          description: Supervisor only. ID of the advisor or supervisor to assign to this user.
+        address:
+          $ref: '#/components/schemas/UserAddress'
+          description: Mailing or residential address
         isEnabled:
           type: boolean
           description: Advisor, associate, or supervisor only

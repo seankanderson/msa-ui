@@ -1,5 +1,21 @@
 import api from './api'
 
+export interface UserAddress {
+  street?: string
+  street2?: string
+  city?: string
+  state?: string
+  postalCode?: string
+  country?: string
+}
+
+export interface AssignedAdvisorInfo {
+  advisorId: string
+  firstName?: string
+  lastName?: string
+  crdNumber?: string
+}
+
 export interface UserProfile {
   userId: string
   email: string
@@ -14,6 +30,9 @@ export interface UserProfile {
   isEnabled: boolean
   emailVerified: boolean
   signupDate: string | null
+  crdNumber?: string
+  assignedAdvisor?: AssignedAdvisorInfo
+  address?: UserAddress
   createdAt: string | null
   updatedAt: string | null
 }
@@ -25,6 +44,7 @@ export interface UpdateUserProfileRequest {
   phone?: string
   governmentId?: string
   smsOptIn?: boolean
+  address?: UserAddress
 }
 
 export interface UpdateUserProfileResponse {

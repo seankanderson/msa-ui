@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { useAuthStore } from '@/stores/auth'
 import userService from '@/services/userService'
 import { getApiError } from '@/services/api'
-import type { UserProfile, UpdateUserProfileRequest } from '@/services/userService'
+import type { UserProfile, UserAddress, AssignedAdvisorInfo, UpdateUserProfileRequest } from '@/services/userService'
 
 const auth = useAuthStore()
 
@@ -58,6 +58,14 @@ const { handleSubmit, resetForm, meta } = useForm({
       dateOfBirth: z.string(),
       governmentId: z.string(),
       smsOptIn: z.boolean(),
+      address: z.object({
+        street: z.string(),
+        street2: z.string(),
+        city: z.string(),
+        state: z.string(),
+        postalCode: z.string(),
+        country: z.string(),
+      }),
     }),
   ),
   initialValues: {
@@ -67,6 +75,14 @@ const { handleSubmit, resetForm, meta } = useForm({
     dateOfBirth: '',
     governmentId: '',
     smsOptIn: false,
+    address: {
+      street: '',
+      street2: '',
+      city: '',
+      state: '',
+      postalCode: '',
+      country: '',
+    },
   },
 })
 
@@ -76,6 +92,13 @@ const { value: phone, errorMessage: phoneError, handleChange: setPhone } = useFi
 const { value: dateOfBirth } = useField<string>('dateOfBirth')
 const { value: governmentId } = useField<string>('governmentId')
 const { value: smsOptIn } = useField<boolean>('smsOptIn')
+
+const { value: addressStreet } = useField<string>('address.street')
+const { value: addressStreet2 } = useField<string>('address.street2')
+const { value: addressCity } = useField<string>('address.city')
+const { value: addressState } = useField<string>('address.state')
+const { value: addressPostalCode } = useField<string>('address.postalCode')
+const { value: addressCountry } = useField<string>('address.country')
 
 function handlePhoneBlur() {
   if (!phone.value) return
@@ -98,6 +121,14 @@ async function loadProfile(userId: string) {
         dateOfBirth: toDateInputValue(data.dateOfBirth),
         governmentId: '', // not pre-filled — masked client-side in placeholder
         smsOptIn: data.smsOptIn ?? false,
+        address: {
+          street: data.address?.street ?? '',
+          street2: data.address?.street2 ?? '',
+          city: data.address?.city ?? '',
+          state: data.address?.state ?? '',
+          postalCode: data.address?.postalCode ?? '',
+          country: data.address?.country ?? '',
+        },
       },
     })
   } catch (err) {
@@ -131,6 +162,14 @@ const onSubmit = handleSubmit(async (values) => {
       dateOfBirth: values.dateOfBirth ? `${values.dateOfBirth}T00:00:00Z` : null,
       governmentId: values.governmentId || undefined,
       smsOptIn: values.smsOptIn,
+      address: {
+        street: values.address.street || undefined,
+        street2: values.address.street2 || undefined,
+        city: values.address.city || undefined,
+        state: values.address.state || undefined,
+        postalCode: values.address.postalCode || undefined,
+        country: values.address.country || undefined,
+      } as UserAddress,
     }
     const { data } = await userService.updateProfile(userId, payload)
     if (data.success) {
@@ -191,7 +230,28 @@ const onSubmit = handleSubmit(async (values) => {
                 <label class="form-label">Member Since</label>
                 <input type="text" class="form-control" :value="profile?.signupDate ? new Date(profile.signupDate).toLocaleDateString() : '—'" disabled />
               </div>
+              <div v-if="profile?.role === 'advisor' || profile?.role === 'supervisor'" class="col-md-4">
+                <label class="form-label">CRD Number</label>
+                <input type="text" class="form-control" :value="profile?.crdNumber ?? '—'" disabled />
+                <div class="msa-field-hint mt-1">FINRA CRD number. Contact a supervisor to update.</div>
+              </div>
             </div>
+
+            <!-- Assigned Advisor (read-only, client/associate only) -->
+            <template v-if="profile?.assignedAdvisor">
+              <hr class="msa-divider" />
+              <div class="msa-section-label">Assigned Advisor</div>
+              <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                  <label class="form-label">Advisor Name</label>
+                  <input type="text" class="form-control" :value="[profile.assignedAdvisor.firstName, profile.assignedAdvisor.lastName].filter(Boolean).join(' ') || '—'" disabled />
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">CRD Number</label>
+                  <input type="text" class="form-control" :value="profile.assignedAdvisor.crdNumber ?? '—'" disabled />
+                </div>
+              </div>
+            </template>
 
             <hr class="msa-divider" />
 
@@ -223,6 +283,12 @@ const onSubmit = handleSubmit(async (values) => {
                   />
                   <div v-if="phoneError" class="invalid-feedback">{{ phoneError }}</div>
                   <div v-else class="msa-field-hint mt-1">E.164 format, e.g. +12125551234</div>
+                  <div class="form-check mt-2">
+                    <input id="smsOptIn" v-model="smsOptIn" class="form-check-input" type="checkbox" />
+                    <label class="form-check-label msa-check-label" for="smsOptIn">
+                      Receive SMS notifications when there are messages or updates for you in the portal
+                    </label>
+                  </div>
                 </div>
                 <div class="col-md-6">
                   <label for="dateOfBirth" class="form-label">Date of Birth</label>
@@ -236,13 +302,38 @@ const onSubmit = handleSubmit(async (values) => {
                 <div class="msa-field-hint mt-1">Leave blank to keep your existing Government ID on file.</div>
               </div>
 
-              <div class="mb-4">
-                <div class="form-check">
-                  <input id="smsOptIn" v-model="smsOptIn" class="form-check-input" type="checkbox" />
-                  <label class="form-check-label msa-check-label" for="smsOptIn">
-                    Receive SMS notifications when there are messages or updates for you in the portal
-                  </label>
+              <hr class="msa-divider" />
+
+              <div class="msa-section-label">Address</div>
+              <div class="mb-3">
+                <label for="addressStreet" class="form-label">Street Address</label>
+                <input id="addressStreet" v-model="addressStreet" type="text" class="form-control" autocomplete="address-line1" placeholder="123 Main St" />
+              </div>
+
+              <div class="mb-3">
+                <label for="addressStreet2" class="form-label">Apt, Suite, Unit <span class="text-muted">(optional)</span></label>
+                <input id="addressStreet2" v-model="addressStreet2" type="text" class="form-control msa-placeholder-light" autocomplete="address-line2" placeholder="Apt 4B" />
+              </div>
+
+              <div class="row g-3 mb-3">
+                <div class="col-md-5">
+                  <label for="addressCity" class="form-label">City</label>
+                  <input id="addressCity" v-model="addressCity" type="text" class="form-control" autocomplete="address-level2" />
                 </div>
+                <div class="col-md-3">
+                  <label for="addressState" class="form-label">State</label>
+                  <input id="addressState" v-model="addressState" type="text" class="form-control" autocomplete="address-level1" placeholder="IL" maxlength="2" />
+                </div>
+                <div class="col-md-4">
+                  <label for="addressPostalCode" class="form-label">Postal Code</label>
+                  <input id="addressPostalCode" v-model="addressPostalCode" type="text" class="form-control" autocomplete="postal-code" placeholder="62701" />
+                </div>
+              </div>
+
+              <div class="mb-4">
+                <label for="addressCountry" class="form-label">Country</label>
+                <input id="addressCountry" v-model="addressCountry" type="text" class="form-control" autocomplete="country" placeholder="US" maxlength="2" />
+                <div class="msa-field-hint mt-1">2-letter country code, e.g. US, CA, GB</div>
               </div>
 
               <div class="d-flex gap-2">
@@ -331,6 +422,10 @@ const onSubmit = handleSubmit(async (values) => {
 .msa-field-hint {
   font-size: 0.78rem;
   color: #6b7a8d;
+}
+
+.msa-placeholder-light::placeholder {
+  color: #b0bac6;
 }
 
 .form-check-input:checked {
