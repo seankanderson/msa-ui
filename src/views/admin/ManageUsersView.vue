@@ -27,6 +27,54 @@ const saveError = ref('')
 const saveSuccess = ref('')
 const statusSaving = ref(false)
 
+// --- Change password state ---
+const showPasswordForm = ref(false)
+const newPassword = ref('')
+const confirmPassword = ref('')
+const passwordSaving = ref(false)
+const passwordError = ref('')
+const passwordSuccess = ref('')
+
+function validatePassword(password: string): string | null {
+  if (password.length < 8) return 'Password must be at least 8 characters.'
+  if (password.length > 128) return 'Password must be no more than 128 characters.'
+  if (!/[a-z]/.test(password)) return 'Password must contain at least one lowercase letter.'
+  if (!/[A-Z]/.test(password)) return 'Password must contain at least one uppercase letter.'
+  if (!/[0-9]/.test(password)) return 'Password must contain at least one number.'
+  if (!/[!@#$%^&*()_+\-=\[\]{};':",./<>?\\|`~]/.test(password)) return 'Password must contain at least one special character.'
+  return null
+}
+
+async function submitPasswordChange() {
+  passwordError.value = ''
+  passwordSuccess.value = ''
+  const pwErr = validatePassword(newPassword.value)
+  if (pwErr) {
+    passwordError.value = pwErr
+    return
+  }
+  if (newPassword.value !== confirmPassword.value) {
+    passwordError.value = 'Passwords do not match.'
+    return
+  }
+  passwordSaving.value = true
+  try {
+    const { data } = await userService.changePassword(selectedUserId.value!, newPassword.value)
+    if (data.success) {
+      passwordSuccess.value = 'Password changed successfully.'
+      newPassword.value = ''
+      confirmPassword.value = ''
+      showPasswordForm.value = false
+    } else {
+      passwordError.value = data.message || 'Password change failed.'
+    }
+  } catch (err) {
+    passwordError.value = getApiError(err, 'An unexpected error occurred.')
+  } finally {
+    passwordSaving.value = false
+  }
+}
+
 const E164 = /^\+[1-9]\d{6,14}$/
 
 function normalizePhone(value: string): string {
@@ -127,6 +175,11 @@ async function selectUser(userId: string) {
   profileError.value = ''
   saveError.value = ''
   saveSuccess.value = ''
+  showPasswordForm.value = false
+  newPassword.value = ''
+  confirmPassword.value = ''
+  passwordError.value = ''
+  passwordSuccess.value = ''
   profileLoading.value = true
   try {
     const { data } = await userService.getProfile(userId)
@@ -543,6 +596,42 @@ onMounted(loadUsers)
                   </div>
                 </form>
 
+                <!-- Change Password -->
+                <template v-if="auth.isAdminRole">
+                  <hr class="msa-divider" />
+                  <div class="d-flex align-items-center justify-content-between mb-2">
+                    <div class="msa-section-label mb-0">Change Password</div>
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary btn-sm"
+                      @click="showPasswordForm = !showPasswordForm; passwordError = ''; passwordSuccess = ''"
+                    >
+                      {{ showPasswordForm ? 'Cancel' : 'Set New Password' }}
+                    </button>
+                  </div>
+                  <div v-if="passwordSuccess" class="alert alert-success py-2 mb-2" role="alert">{{ passwordSuccess }}</div>
+                  <div v-if="showPasswordForm" class="msa-password-form">
+                    <div v-if="passwordError" class="alert alert-danger py-2 mb-3" role="alert">{{ passwordError }}</div>
+                    <div class="mb-3">
+                      <label for="mu-newPassword" class="form-label">New Password</label>
+                      <input id="mu-newPassword" v-model="newPassword" type="password" class="form-control" autocomplete="new-password" placeholder="8–128 chars, upper, lower, number, special" />
+                    </div>
+                    <div class="mb-3">
+                      <label for="mu-confirmPassword" class="form-label">Confirm Password</label>
+                      <input id="mu-confirmPassword" v-model="confirmPassword" type="password" class="form-control" autocomplete="new-password" placeholder="Re-enter password" />
+                    </div>
+                    <button
+                      type="button"
+                      class="btn btn-primary-msa btn-sm"
+                      :disabled="passwordSaving || !newPassword || !confirmPassword"
+                      @click="submitPasswordChange"
+                    >
+                      <span v-if="passwordSaving" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                      {{ passwordSaving ? 'Saving…' : 'Change Password' }}
+                    </button>
+                  </div>
+                </template>
+
               </div>
 
             </div>
@@ -795,6 +884,13 @@ onMounted(loadUsers)
 
 .btn-primary-msa:disabled {
   opacity: 0.55;
+}
+
+.msa-password-form {
+  background-color: #f8f9fb;
+  border: 1px solid #dde3ec;
+  border-radius: 4px;
+  padding: 1.25rem;
 }
 </style>
 

@@ -100,6 +100,10 @@ const userService = {
   updateUserStatus(userId: string, isEnabled: boolean): Promise<{ data: UpdateUserStatusResponse }> {
     return api.post(`/api/users/${userId}/status`, { isEnabled })
   },
+
+  changePassword(userId: string, newPassword: string): Promise<{ data: { success: boolean; message: string } }> {
+    return api.post(`/api/users/${userId}/change-password`, { newPassword })
+  },
 }
 
 export default userService
