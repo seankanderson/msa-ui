@@ -14,7 +14,7 @@ const year = new Date().getFullYear()
         <div class="col-md-4">
           <p class="msa-footer-heading">Legal</p>
           <ul class="list-unstyled msa-footer-links mb-0">
-            <li><a href="#">Privacy Policy</a></li>
+            <li><RouterLink to="/privacy">Privacy Policy</RouterLink></li>
             <li><a href="#">Terms of Use</a></li>
             <li><a href="#">Form ADV</a></li>
           </ul>
