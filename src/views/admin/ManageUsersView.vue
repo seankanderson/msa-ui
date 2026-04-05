@@ -137,7 +137,7 @@ async function selectUser(userId: string) {
         lastName: data.lastName ?? '',
         phone: data.phone ?? '',
         dateOfBirth: toDateInputValue(data.dateOfBirth),
-        governmentId: '',
+        governmentId: data.governmentId ?? '',
         smsOptIn: data.smsOptIn ?? false,
         role: data.role ?? '',
         address: {
@@ -169,7 +169,7 @@ const onSubmit = handleSubmit(async (values) => {
       lastName: values.lastName || undefined,
       phone: values.phone || undefined,
       dateOfBirth: values.dateOfBirth ? `${values.dateOfBirth}T00:00:00Z` : null,
-      governmentId: values.governmentId || undefined,
+      governmentId: values.governmentId || null,
       smsOptIn: values.smsOptIn,
       address: {
         street: values.address.street || undefined,
@@ -500,8 +500,7 @@ onMounted(loadUsers)
 
                   <div class="mb-4">
                     <label for="mu-governmentId" class="form-label">Government ID</label>
-                    <input id="mu-governmentId" v-model="governmentId" type="text" class="form-control" autocomplete="off" :placeholder="profile.governmentId ? `Current: ${maskGovernmentId(profile.governmentId)} — enter new value to replace` : 'e.g. 123-45-6789'" />
-                    <div class="msa-field-hint mt-1">Leave blank to keep existing value on file.</div>
+                    <input id="mu-governmentId" v-model="governmentId" type="text" class="form-control" autocomplete="off" placeholder="e.g. 123-45-6789" />
                   </div>
 
                   <hr class="msa-divider" />
