@@ -389,6 +389,49 @@ paths:
               schema:
                 $ref: '#/components/schemas/OperationResult'
   # --- USER PROFILE ENDPOINTS ---
+  /users:
+    get:
+      summary: List users
+      operationId: listUsers
+      tags: [Users]
+      description: |
+        Supervisors see all users.
+        Advisors see only the clients whose assigned advisor is themselves.
+        Associates and clients are not permitted.
+      parameters:
+        - name: role
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [client, advisor, associate, supervisor]
+          description: Filter by role.
+        - name: skip
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: Number of records to skip (pagination).
+        - name: take
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+          description: Number of records to return (max 100).
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
   /users/{userId}/profile:
     get:
       summary: Get a user's profile
@@ -436,6 +479,52 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UpdateUserProfileResponse'
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: User not found
+  /users/{userId}/status:
+    post:
+      summary: Enable or disable a user account
+      operationId: updateUserStatus
+      tags: [Users]
+      description: |
+        Supervisors may enable/disable any account.
+        Advisors may enable/disable only their assigned clients.
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [isEnabled]
+              properties:
+                isEnabled:
+                  type: boolean
+      responses:
+        '200':
+          description: Status updated (or already at the requested value)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  isEnabled:
+                    type: boolean
         '400':
           description: Validation error
         '401':
@@ -981,6 +1070,51 @@ components:
         newPassword:
           type: string
     # --- USER PROFILE SCHEMAS ---
+    UserListItem:
+      type: object
+      properties:
+        userId:
+          type: string
+        email:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phone:
+          type: string
+        role:
+          type: string
+          enum: [client, advisor, associate, supervisor]
+        isEnabled:
+          type: boolean
+        emailVerified:
+          type: boolean
+        signupDate:
+          type: string
+          format: date-time
+        crdNumber:
+          type: string
+          description: FINRA CRD number. Only present for advisor/supervisor profiles.
+        assignedAdvisorId:
+          type: string
+          description: ID of the assigned advisor, if set.
+    UserListResponse:
+      type: object
+      properties:
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserListItem'
+        pageInfo:
+          type: object
+          properties:
+            skip:
+              type: integer
+            take:
+              type: integer
+            total:
+              type: integer
     UserProfile:
       type: object
       properties:

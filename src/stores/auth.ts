@@ -36,6 +36,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isAuthenticated = computed(() => !!accessToken.value)
   const isSupervisor = computed(() => user.value?.role === 'supervisor')
+  const isAdminRole = computed(() => user.value?.role === 'supervisor' || user.value?.role === 'advisor')
 
   async function signUp(payload: SignUpRequest) {
     const { data } = await authService.signUp(payload)
@@ -124,6 +125,7 @@ export const useAuthStore = defineStore('auth', () => {
     pendingEmail,
     isAuthenticated,
     isSupervisor,
+    isAdminRole,
     signUp,
     login,
     sendMfa,

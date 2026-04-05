@@ -36,8 +36,8 @@ async function handleLogout() {
           <li class="nav-item">
             <RouterLink class="nav-link" to="/" exact-active-class="active">Home</RouterLink>
           </li>
-          <li v-if="auth.isSupervisor" class="nav-item">
-            <RouterLink class="nav-link" to="/questions" active-class="active">Questions</RouterLink>
+          <li v-if="auth.isAdminRole" class="nav-item">
+            <RouterLink class="nav-link" to="/admin" active-class="active">Admin</RouterLink>
           </li>
         </ul>
 

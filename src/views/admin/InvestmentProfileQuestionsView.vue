@@ -199,84 +199,97 @@ function handleDeleteQuestion(index: number) {
 
 <template>
   <div class="msa-page">
-    <div class="container-fluid px-4 py-4">
+    <div class="container py-5">
+      <div class="row justify-content-center">
+        <div class="col-md-10 col-lg-9">
 
-      <h1 class="msa-page-title mb-1">Investment Profile Questions</h1>
-      <p class="msa-page-sub mb-3">Manage question sets used to collect investment profiles from clients.</p>
+          <div class="d-flex align-items-center gap-3 mb-1">
+            <RouterLink to="/admin" class="msa-back-link">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
+              </svg>
+              Admin
+            </RouterLink>
+          </div>
 
-      <!-- Alerts -->
-      <div
-        v-if="alertSuccess"
-        class="alert alert-success alert-dismissible fade show mb-3"
-        role="alert"
-      >
-        {{ alertSuccess }}
-        <button type="button" class="btn-close" aria-label="Close" @click="alertSuccess = ''" />
-      </div>
-      <div
-        v-if="alertError"
-        class="alert alert-danger alert-dismissible fade show mb-3"
-        role="alert"
-      >
-        {{ alertError }}
-        <button type="button" class="btn-close" aria-label="Close" @click="alertError = ''" />
-      </div>
+          <h1 class="msa-page-title mb-1">Investment Profile Questions</h1>
+          <p class="msa-page-sub mb-3">Manage question sets used to collect investment profiles from clients.</p>
 
-      <!-- Initial spinner -->
-      <div v-if="initialLoading" class="text-center py-5">
-        <div class="spinner-border text-navy" role="status">
-          <span class="visually-hidden">Loading…</span>
+          <!-- Alerts -->
+          <div
+            v-if="alertSuccess"
+            class="alert alert-success alert-dismissible fade show mb-3"
+            role="alert"
+          >
+            {{ alertSuccess }}
+            <button type="button" class="btn-close" aria-label="Close" @click="alertSuccess = ''" />
+          </div>
+          <div
+            v-if="alertError"
+            class="alert alert-danger alert-dismissible fade show mb-3"
+            role="alert"
+          >
+            {{ alertError }}
+            <button type="button" class="btn-close" aria-label="Close" @click="alertError = ''" />
+          </div>
+
+          <!-- Initial spinner -->
+          <div v-if="initialLoading" class="text-center py-5">
+            <div class="spinner-border text-navy" role="status">
+              <span class="visually-hidden">Loading…</span>
+            </div>
+          </div>
+
+          <template v-else>
+            <!-- Selector / control panel -->
+            <QuestionSetSelector
+              :names="NAMES"
+              :selected-name="selectedName"
+              :current-set="currentSet"
+              :draft-set="draftSet"
+              :viewing-version="viewingVersion"
+              :loading-current="loadingCurrent"
+              :loading-draft="loadingDraft"
+              :creating="creating"
+              :saving="saving"
+              :discarding="discarding"
+              :publishing="publishing"
+              :is-dirty="isDirty"
+              class="mb-4"
+              @select-name="handleSelectName"
+              @view-current="handleViewCurrent"
+              @view-draft="handleViewDraft"
+              @create-draft="handleCreateDraft"
+              @save-draft="handleSaveDraft"
+              @discard-draft="handleDiscardDraft"
+              @publish-draft="handlePublishDraft"
+            />
+
+            <!-- Editor -->
+            <template v-if="viewingVersion">
+              <div v-if="localQuestions.length === 0" class="empty-questions">
+                No questions found in this set.
+              </div>
+              <QuestionStepper
+                v-else
+                v-model="currentIndex"
+                :questions="localQuestions"
+                :readonly="isReadonly"
+                @add-question="handleAddQuestion"
+                @delete-question="handleDeleteQuestion"
+              >
+                <QuestionEditor
+                  :model-value="localQuestions[currentIndex]!"
+                  :readonly="isReadonly"
+                  :depth="0"
+                  @update:model-value="updateQuestion"
+                />
+              </QuestionStepper>
+            </template>
+          </template>
+
         </div>
       </div>
-
-      <template v-else>
-        <!-- Selector / control panel -->
-        <QuestionSetSelector
-          :names="NAMES"
-          :selected-name="selectedName"
-          :current-set="currentSet"
-          :draft-set="draftSet"
-          :viewing-version="viewingVersion"
-          :loading-current="loadingCurrent"
-          :loading-draft="loadingDraft"
-          :creating="creating"
-          :saving="saving"
-          :discarding="discarding"
-          :publishing="publishing"
-          :is-dirty="isDirty"
-          class="mb-4"
-          @select-name="handleSelectName"
-          @view-current="handleViewCurrent"
-          @view-draft="handleViewDraft"
-          @create-draft="handleCreateDraft"
-          @save-draft="handleSaveDraft"
-          @discard-draft="handleDiscardDraft"
-          @publish-draft="handlePublishDraft"
-        />
-
-        <!-- Editor -->
-        <template v-if="viewingVersion">
-          <div v-if="localQuestions.length === 0" class="empty-questions">
-            No questions found in this set.
-          </div>
-          <QuestionStepper
-            v-else
-            v-model="currentIndex"
-            :questions="localQuestions"
-            :readonly="isReadonly"
-            @add-question="handleAddQuestion"
-            @delete-question="handleDeleteQuestion"
-          >
-            <QuestionEditor
-              :model-value="localQuestions[currentIndex]!"
-              :readonly="isReadonly"
-              :depth="0"
-              @update:model-value="updateQuestion"
-            />
-          </QuestionStepper>
-        </template>
-      </template>
-
     </div>
   </div>
 </template>
@@ -285,6 +298,19 @@ function handleDeleteQuestion(index: number) {
 .msa-page {
   background-color: var(--msa-light-gray);
   min-height: calc(100vh - 130px);
+}
+
+.msa-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: #6b7a8d;
+  text-decoration: none;
+}
+
+.msa-back-link:hover {
+  color: var(--msa-navy);
 }
 
 .msa-page-title {

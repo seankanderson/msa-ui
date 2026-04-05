@@ -41,10 +41,22 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
-      path: '/questions',
+      path: '/admin',
+      name: 'admin',
+      component: () => import('@/views/admin/AdminView.vue'),
+      meta: { requiresAuth: true, requiresAdminRole: true },
+    },
+    {
+      path: '/admin/users',
+      name: 'manage-users',
+      component: () => import('@/views/admin/ManageUsersView.vue'),
+      meta: { requiresAuth: true, requiresAdminRole: true },
+    },
+    {
+      path: '/admin/questions',
       name: 'questions',
       component: () => import('@/views/admin/InvestmentProfileQuestionsView.vue'),
-      meta: { requiresAuth: true, requiresRole: 'supervisor' },
+      meta: { requiresAuth: true, requiresAdminRole: true },
     },
   ],
 })
@@ -60,6 +72,9 @@ router.beforeEach((to) => {
     return { name: 'login' }
   }
   if (to.meta.requiresRole && auth.user?.role !== to.meta.requiresRole) {
+    return { name: 'home' }
+  }
+  if (to.meta.requiresAdminRole && !auth.isAdminRole) {
     return { name: 'home' }
   }
 })
