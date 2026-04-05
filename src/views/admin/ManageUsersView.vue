@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useForm, useField } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { z } from 'zod'
@@ -11,6 +11,7 @@ import type { UserProfile, UserListItem, UpdateUserProfileRequest, UserAddress }
 
 const auth = useAuthStore()
 const router = useRouter()
+const route = useRoute()
 
 // --- List state ---
 const listLoading = ref(true)
@@ -312,7 +313,11 @@ const ROLE_FILTERS = [
   { value: 'supervisor', label: 'Supervisors' },
 ]
 
-onMounted(loadUsers)
+onMounted(async () => {
+  await loadUsers()
+  const preselect = route.query.selected as string | undefined
+  if (preselect) selectUser(preselect)
+})
 </script>
 
 <template>

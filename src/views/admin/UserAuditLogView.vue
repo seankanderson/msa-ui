@@ -131,7 +131,7 @@ onMounted(() => {
 
       <!-- Header -->
       <div class="d-flex align-items-center gap-3 mb-4">
-        <RouterLink to="/admin/users" class="btn btn-outline-secondary btn-sm">
+        <RouterLink :to="{ path: '/admin/users', query: { selected: userId } }" class="btn btn-outline-secondary btn-sm">
           ← Back to Users
         </RouterLink>
         <div>
