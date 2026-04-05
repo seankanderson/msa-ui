@@ -160,7 +160,7 @@
   </section>
 
   <!-- CLIENT INTERMEDIATION -->
-  <section class="msa-section bg-white" id="client-intermediation">
+  <section v-if="false" class="msa-section bg-white" id="client-intermediation">
     <div class="container">
       <div class="row g-5 align-items-start">
         <div class="col-lg-5">
@@ -259,7 +259,7 @@
   </section>
 
   <!-- CONFIDENTIAL OVERSIGHT -->
-  <section class="msa-section msa-section-alt" id="confidential-oversight">
+  <section class="msa-section bg-white" id="confidential-oversight">
     <div class="container">
       <div class="row g-5 align-items-start">
         <div class="col-lg-5">
