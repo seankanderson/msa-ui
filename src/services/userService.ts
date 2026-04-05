@@ -84,6 +84,32 @@ export interface UpdateUserStatusResponse {
   isEnabled: boolean
 }
 
+export interface AuditLogFieldChange {
+  before: unknown
+  after: unknown
+}
+
+export interface AuditLogEntry {
+  id: string
+  eventType: string
+  userId: string
+  targetUserId: string | null
+  action: string
+  details: Record<string, unknown> | null
+  ipAddress: string | null
+  userAgent: string | null
+  statusCode: number | null
+  errorMessage: string | null
+  timestamp: string
+}
+
+export interface AuditLogResponse {
+  items: AuditLogEntry[]
+  total: number
+  skip: number
+  take: number
+}
+
 const userService = {
   getProfile(userId: string): Promise<{ data: UserProfile }> {
     return api.get(`/api/users/${userId}/profile`)
@@ -103,6 +129,13 @@ const userService = {
 
   changePassword(userId: string, newPassword: string): Promise<{ data: { success: boolean; message: string } }> {
     return api.post(`/api/users/${userId}/change-password`, { newPassword })
+  },
+
+  getUserAuditLogs(
+    userId: string,
+    params?: { eventType?: string; skip?: number; take?: number; sort?: 'asc' | 'desc' },
+  ): Promise<{ data: AuditLogResponse }> {
+    return api.get(`/api/users/${userId}/audit`, { params })
   },
 }
 

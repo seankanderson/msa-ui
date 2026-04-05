@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useForm, useField } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { z } from 'zod'
@@ -9,6 +10,7 @@ import { getApiError } from '@/services/api'
 import type { UserProfile, UserListItem, UpdateUserProfileRequest, UserAddress } from '@/services/userService'
 
 const auth = useAuthStore()
+const router = useRouter()
 
 // --- List state ---
 const listLoading = ref(true)
@@ -222,7 +224,7 @@ const onSubmit = handleSubmit(async (values) => {
       lastName: values.lastName || undefined,
       phone: values.phone || undefined,
       dateOfBirth: values.dateOfBirth ? `${values.dateOfBirth}T00:00:00Z` : null,
-      governmentId: values.governmentId || null,
+      governmentId: values.governmentId || undefined,
       smsOptIn: values.smsOptIn,
       address: {
         street: values.address.street || undefined,
@@ -438,24 +440,80 @@ onMounted(loadUsers)
               <!-- Edit form -->
               <div v-else-if="profile" class="msa-card">
 
-                <!-- Status bar -->
-                <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
-                  <div>
+                <!-- User identity + action bar -->
+                <div class="mb-3">
+                  <div class="d-flex align-items-center gap-2 mb-2">
                     <span class="user-detail-name">{{ displayName(users.find(u => u.userId === selectedUserId)!) }}</span>
-                    <span :class="['ms-2 badge', profile.isEnabled ? 'bg-success' : 'bg-secondary']">
+                    <span :class="['badge', profile.isEnabled ? 'bg-success' : 'bg-secondary']">
                       {{ profile.isEnabled ? 'Enabled' : 'Disabled' }}
                     </span>
                   </div>
-                  <button
-                    type="button"
-                    :class="['btn btn-sm', profile.isEnabled ? 'btn-outline-danger' : 'btn-outline-success']"
-                    :disabled="statusSaving"
-                    @click="toggleStatus"
-                  >
-                    <span v-if="statusSaving" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                    {{ profile.isEnabled ? 'Disable User' : 'Enable User' }}
-                  </button>
+                  <div class="msa-user-actions">
+                    <button
+                      type="button"
+                      :class="['btn btn-sm msa-action-btn', profile.isEnabled ? 'msa-action-btn--danger' : 'msa-action-btn--success']"
+                      :disabled="statusSaving"
+                      @click="toggleStatus"
+                    >
+                      <span v-if="statusSaving" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                      <svg v-else xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" class="me-1" viewBox="0 0 16 16">
+                        <path v-if="profile.isEnabled" d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                        <path v-if="profile.isEnabled" d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+                        <path v-else d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+                      </svg>
+                      {{ profile.isEnabled ? 'Disable User' : 'Enable User' }}
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-sm msa-action-btn"
+                      @click="router.push({ name: 'user-audit-log', params: { userId: selectedUserId } })"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" class="me-1" viewBox="0 0 16 16">
+                        <path d="M5 4a.5.5 0 0 0 0 1h6a.5.5 0 0 0 0-1H5zm-.5 2.5A.5.5 0 0 1 5 6h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5zM5 8a.5.5 0 0 0 0 1h6a.5.5 0 0 0 0-1H5zm0 2a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1H5z"/>
+                        <path d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2zm10-1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1z"/>
+                      </svg>
+                      Audit Log
+                    </button>
+                    <button
+                      v-if="auth.isAdminRole"
+                      type="button"
+                      :class="['btn btn-sm msa-action-btn', showPasswordForm ? 'msa-action-btn--active' : '']"
+                      @click="showPasswordForm = !showPasswordForm; passwordError = ''; passwordSuccess = ''"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" class="me-1" viewBox="0 0 16 16">
+                        <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
+                      </svg>
+                      {{ showPasswordForm ? 'Cancel' : 'Change Password' }}
+                    </button>
+                  </div>
                 </div>
+
+                <!-- Change Password form (toggled from action bar) -->
+                <template v-if="auth.isAdminRole && (showPasswordForm || passwordSuccess)">
+                  <div class="msa-password-form mt-2">
+                    <div v-if="passwordSuccess" class="alert alert-success py-2 mb-2" role="alert">{{ passwordSuccess }}</div>
+                    <template v-if="showPasswordForm">
+                      <div v-if="passwordError" class="alert alert-danger py-2 mb-3" role="alert">{{ passwordError }}</div>
+                      <div class="mb-3">
+                        <label for="mu-newPassword" class="form-label">New Password</label>
+                        <input id="mu-newPassword" v-model="newPassword" type="password" class="form-control" autocomplete="new-password" placeholder="8–128 chars, upper, lower, number, special" />
+                      </div>
+                      <div class="mb-3">
+                        <label for="mu-confirmPassword" class="form-label">Confirm Password</label>
+                        <input id="mu-confirmPassword" v-model="confirmPassword" type="password" class="form-control" autocomplete="new-password" placeholder="Re-enter password" />
+                      </div>
+                      <button
+                        type="button"
+                        class="btn btn-primary-msa btn-sm"
+                        :disabled="passwordSaving || !newPassword || !confirmPassword"
+                        @click="submitPasswordChange"
+                      >
+                        <span v-if="passwordSaving" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        {{ passwordSaving ? 'Saving…' : 'Change Password' }}
+                      </button>
+                    </template>
+                  </div>
+                </template>
 
                 <div v-if="saveSuccess" class="alert alert-success py-2" role="alert">{{ saveSuccess }}</div>
                 <div v-if="saveError" class="alert alert-danger py-2" role="alert">{{ saveError }}</div>
@@ -588,49 +646,13 @@ onMounted(loadUsers)
                     <div class="msa-field-hint mt-1">2-letter country code, e.g. US, CA, GB</div>
                   </div>
 
-                  <div class="d-flex gap-2">
+                  <div class="d-flex gap-2 align-items-center">
                     <button type="submit" class="btn btn-primary-msa" :disabled="!meta.dirty || saving">
                       <span v-if="saving" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                       {{ saving ? 'Saving…' : 'Save Changes' }}
                     </button>
                   </div>
                 </form>
-
-                <!-- Change Password -->
-                <template v-if="auth.isAdminRole">
-                  <hr class="msa-divider" />
-                  <div class="d-flex align-items-center justify-content-between mb-2">
-                    <div class="msa-section-label mb-0">Change Password</div>
-                    <button
-                      type="button"
-                      class="btn btn-outline-secondary btn-sm"
-                      @click="showPasswordForm = !showPasswordForm; passwordError = ''; passwordSuccess = ''"
-                    >
-                      {{ showPasswordForm ? 'Cancel' : 'Set New Password' }}
-                    </button>
-                  </div>
-                  <div v-if="passwordSuccess" class="alert alert-success py-2 mb-2" role="alert">{{ passwordSuccess }}</div>
-                  <div v-if="showPasswordForm" class="msa-password-form">
-                    <div v-if="passwordError" class="alert alert-danger py-2 mb-3" role="alert">{{ passwordError }}</div>
-                    <div class="mb-3">
-                      <label for="mu-newPassword" class="form-label">New Password</label>
-                      <input id="mu-newPassword" v-model="newPassword" type="password" class="form-control" autocomplete="new-password" placeholder="8–128 chars, upper, lower, number, special" />
-                    </div>
-                    <div class="mb-3">
-                      <label for="mu-confirmPassword" class="form-label">Confirm Password</label>
-                      <input id="mu-confirmPassword" v-model="confirmPassword" type="password" class="form-control" autocomplete="new-password" placeholder="Re-enter password" />
-                    </div>
-                    <button
-                      type="button"
-                      class="btn btn-primary-msa btn-sm"
-                      :disabled="passwordSaving || !newPassword || !confirmPassword"
-                      @click="submitPasswordChange"
-                    >
-                      <span v-if="passwordSaving" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                      {{ passwordSaving ? 'Saving…' : 'Change Password' }}
-                    </button>
-                  </div>
-                </template>
 
               </div>
 
@@ -891,6 +913,66 @@ onMounted(loadUsers)
   border: 1px solid #dde3ec;
   border-radius: 4px;
   padding: 1.25rem;
+}
+
+/* Action bar */
+.msa-user-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.6rem 0.75rem;
+  background: #f4f6f9;
+  border: 1px solid #dde3ec;
+  border-radius: 4px;
+}
+
+.msa-action-btn {
+  font-size: 0.78rem;
+  font-weight: 500;
+  padding: 0.3rem 0.75rem;
+  border: 1px solid #c8d0dc;
+  background: #fff;
+  color: #374151;
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  transition: background 0.1s, border-color 0.1s, color 0.1s;
+}
+
+.msa-action-btn:hover {
+  background: #eef1f8;
+  border-color: var(--msa-navy);
+  color: var(--msa-navy);
+}
+
+.msa-action-btn--active {
+  background: #e8ecf3;
+  border-color: var(--msa-navy);
+  color: var(--msa-navy);
+}
+
+.msa-action-btn--danger {
+  border-color: #fca5a5;
+  color: #b91c1c;
+  background: #fff5f5;
+}
+
+.msa-action-btn--danger:hover {
+  background: #fee2e2;
+  border-color: #b91c1c;
+  color: #b91c1c;
+}
+
+.msa-action-btn--success {
+  border-color: #86efac;
+  color: #15803d;
+  background: #f0fdf4;
+}
+
+.msa-action-btn--success:hover {
+  background: #dcfce7;
+  border-color: #15803d;
+  color: #15803d;
 }
 </style>
 

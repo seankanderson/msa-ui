@@ -580,6 +580,14 @@ paths:
             type: integer
             default: 20
             maximum: 100
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+          description: Sort order by timestamp. `desc` returns newest first (default); `asc` returns oldest first.
       responses:
         '200':
           description: Paginated list of audit log entries
