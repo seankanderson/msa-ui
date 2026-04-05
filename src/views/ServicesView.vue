@@ -314,13 +314,15 @@
               </svg>
               <p class="msa-consult-text">Please consult with an advisor for fees.</p>
             </div>
+            <p class="msa-fees-note mt-2">
+              Depending on the nature of the situation and the individuals involved, some
+              engagements may qualify for pro bono or reduced-fee services. Please mention
+              your circumstances when reaching out.
+            </p>
             <p class="msa-fees-note mt-3">
               Confidential Oversight engagements are scoped individually. Contact us to arrange
               a private consultation with a senior advisor.
             </p>
-            <div class="mt-4">
-              <RouterLink class="btn btn-cta-primary" to="/signup">Get Started</RouterLink>
-            </div>
           </div>
         </div>
       </div>
